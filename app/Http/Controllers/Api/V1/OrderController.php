@@ -462,7 +462,7 @@ class OrderController extends Controller
                 ], 200);
             }
         } catch (\Exception $e) {
-            return response()->json([$e], 403);
+            return response()->json([$e], 200);
         }
 
         return response()->json([
@@ -642,7 +642,7 @@ class OrderController extends Controller
                 'errors' => [
                     ['code' => 'order', 'message' => 'not found!']
                 ]
-            ], 401);
+            ], 200);
         } else if ($order->order_status == 'delivered') {
 
             $order->order_status = 'refund_requested';
@@ -654,7 +654,7 @@ class OrderController extends Controller
             'errors' => [
                 ['code' => 'order', 'message' => 'You can not request for refund before delivery!']
             ]
-        ], 401);
+        ], 200);
     }
 
     public function update_payment_method(Request $request)
@@ -702,7 +702,7 @@ class OrderController extends Controller
             'errors' => [
                 ['code' => 'order', 'message' => trans('messages.not_found')]
             ]
-        ], 401);
+        ], 200);
     }
 
     public function cart_list(Request $request)
