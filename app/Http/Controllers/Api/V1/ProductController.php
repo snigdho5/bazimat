@@ -23,12 +23,12 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['state'=>1, 'errors' => Helpers::error_processor($validator)], 200);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        $imgpath=url('')."/storage/app/public/product/";
+        $imgpath = url('') . "/storage/app/public/product/";
         $products = ProductLogic::get_latest_products($request['limit'], $request['offset'], $request['restaurant_id']);
-       // $products['products'] = Helpers::product_data_formatting($products['products'], true);
-        return response()->json(['state'=>0,'errors' => $products,'proimgpath'=>$imgpath], 200);
+        // $products['products'] = Helpers::product_data_formatting($products['products'], true);
+        return response()->json(['state' => 0, 'errors' => $products, 'proimgpath' => $imgpath], 200);
     }
 
     public function get_searched_products(Request $request)
@@ -37,45 +37,68 @@ class ProductController extends Controller
             $errors = [];
             array_push($errors, ['code' => 'zoneId', 'message' => 'Zone id is required!']);
             return response()->json([
-                'state'=>1,
+                'state' => 1,
                 'errors' => $errors
             ], 200);
         }
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
+            // 'name' => 'required',
             'restaurant_id' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['state'=>1,'errors' => Helpers::error_processor($validator)], 200);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        $zone_id= $request->header('zoneId');
+        $zone_id = $request->header('zoneId');
 
-        $key = explode(' ', $request['name']);
-        
-        $limit = $request['limit']??10;
-        $offset = $request['offset']??1;
+        // $key = explode(' ', $request['name']);
 
-        $products = Food::active()
-        ->with(['rating'])
-        ->whereHas('restaurant', function($q)use($zone_id){
-            $q->where('zone_id', $zone_id);
-        })
-        // ->when($request->category_id, function($query)use($request){
-        //     $query->whereHas('category',function($q)use($request){
-        //         return $q->whereId($request->category_id)->orWhere('parent_id', $request->category_id);
-        //     });
-        // })
-        ->when($request['restaurant_id'], function($query) use($request){
-            return $query->where('restaurant_id', $request['restaurant_id']);
-        })
-        // ->where(function ($q) use ($key) {
-        //     foreach ($key as $value) {
-        //         $q->orWhere('name', 'like', "%{$value}%");
-        //     }
-        // })
-        ->where('name', 'like', "%{$request['name']}%")
-        ->paginate($limit, ['*'], 'page', $offset);
+        $limit = $request['limit'] ?? 10;
+        $offset = $request['offset'] ?? 1;
+
+        if (isset($request['name']) && $request['name'] != '') {
+            $products = Food::active()
+                ->with(['rating'])
+                ->whereHas('restaurant', function ($q) use ($zone_id) {
+                    $q->where('zone_id', $zone_id);
+                })
+                // ->when($request->category_id, function($query)use($request){
+                //     $query->whereHas('category',function($q)use($request){
+                //         return $q->whereId($request->category_id)->orWhere('parent_id', $request->category_id);
+                //     });
+                // })
+                ->when($request['restaurant_id'], function ($query) use ($request) {
+                    return $query->where('restaurant_id', $request['restaurant_id']);
+                })
+                // ->where(function ($q) use ($key) {
+                //     foreach ($key as $value) {
+                //         $q->orWhere('name', 'like', "%{$value}%");
+                //     }
+                // })
+                ->where('name', 'like', "%{$request['name']}%")
+                ->paginate($limit, ['*'], 'page', $offset);
+        } else {
+            $products = Food::active()
+                ->with(['rating'])
+                ->whereHas('restaurant', function ($q) use ($zone_id) {
+                    $q->where('zone_id', $zone_id);
+                })
+                // ->when($request->category_id, function($query)use($request){
+                //     $query->whereHas('category',function($q)use($request){
+                //         return $q->whereId($request->category_id)->orWhere('parent_id', $request->category_id);
+                //     });
+                // })
+                ->when($request['restaurant_id'], function ($query) use ($request) {
+                    return $query->where('restaurant_id', $request['restaurant_id']);
+                })
+                // ->where(function ($q) use ($key) {
+                //     foreach ($key as $value) {
+                //         $q->orWhere('name', 'like', "%{$value}%");
+                //     }
+                // })
+                // ->where('name', 'like', "%{$request['name']}%")
+                ->paginate($limit, ['*'], 'page', $offset);
+        }
 
         $data =  [
             'total_size' => $products->total(),
@@ -86,9 +109,9 @@ class ProductController extends Controller
 
         // $data['products'] = Helpers::product_data_formatting($data['products'], true);
         return response()->json([
-                'state'=>0,
-                'errors' => $data
-            ], 200);
+            'state' => 0,
+            'errors' => $data
+        ], 200);
     }
 
     public function get_popular_products(Request $request)
@@ -97,34 +120,34 @@ class ProductController extends Controller
             $errors = [];
             array_push($errors, ['code' => 'zoneId', 'message' => 'Zone id is required!']);
             return response()->json([
-                'state'=>1,
+                'state' => 1,
                 'errors' => $errors
             ], 200);
         }
-         $imgpath=url('')."/storage/app/public/product/";
-        $zone_id= $request->header('zoneId');
+        $imgpath = url('') . "/storage/app/public/product/";
+        $zone_id = $request->header('zoneId');
         $products = ProductLogic::popular_products($zone_id, $request['limit'], $request['offset']);
         //$products['products'] = Helpers::product_data_formatting($products['products'], true);
         return response()->json([
-                'state'=>0,
-                'errors' => $products,
-                'proimgpath'=>$imgpath,
-            ], 200);
+            'state' => 0,
+            'errors' => $products,
+            'proimgpath' => $imgpath,
+        ], 200);
     }
 
     public function get_product($id)
     {
-        
+
         try {
             $product = ProductLogic::get_product($id);
             $products = Helpers::product_data_formatting($product, false);
             return response()->json([
-                'state'=>0,
+                'state' => 0,
                 'errors' => $products
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'state'=>1,
+                'state' => 1,
                 'errors' => ['code' => 'product-001', 'message' => trans('messages.not_found')]
             ], 200);
         }
@@ -136,12 +159,12 @@ class ProductController extends Controller
             $products = ProductLogic::get_related_products($id);
             $products = Helpers::product_data_formatting($products, true);
             return response()->json([
-                'state'=>0,
+                'state' => 0,
                 'errors' => $products
             ], 200);
         }
         return response()->json([
-            'state'=>1,
+            'state' => 1,
             'errors' => ['code' => 'product-001', 'message' => trans('messages.not_found')]
         ], 200);
     }
@@ -151,12 +174,12 @@ class ProductController extends Controller
         try {
             $products = Helpers::product_data_formatting(Food::active()->with(['rating'])->where(['set_menu' => 1, 'status' => 1])->get(), true);
             return response()->json([
-                'state'=>0,
+                'state' => 0,
                 'errors' => $products
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'state'=>1,
+                'state' => 1,
                 'errors' => ['code' => 'product-001', 'message' => 'Set menu not found!']
             ], 200);
         }
@@ -179,28 +202,27 @@ class ProductController extends Controller
     {
         $food_id = $request->food_id;
         try {
-            if($food_id){
+            if ($food_id) {
                 $product = Food::find($food_id);
                 $overallRating = ProductLogic::get_overall_rating($product->reviews);
-    
-                if(!empty($overallRating) && $overallRating[0] > 0){
+
+                if (!empty($overallRating) && $overallRating[0] > 0) {
                     return response()->json([
-                        'state'=>0,
+                        'state' => 0,
                         'rating' => $overallRating[0]
-                    ], 200);  
-                }else{
+                    ], 200);
+                } else {
                     return response()->json([
-                        'state'=>1,
+                        'state' => 1,
                         'errors' => 'rating not found'
                     ], 200);
                 }
-            }else{
+            } else {
                 return response()->json([
-                    'state'=>1,
+                    'state' => 1,
                     'errors' => 'food_id not found'
                 ], 200);
             }
-            
         } catch (\Exception $e) {
             return response()->json(['errors' => $e], 403);
         }
@@ -211,31 +233,30 @@ class ProductController extends Controller
         $food_id = $request->food_id;
         $user_id = $request->user_id;
         try {
-            if($food_id && $user_id){
+            if ($food_id && $user_id) {
                 $product =   DB::table('reviews')
-                ->where('food_id', $food_id)
-                ->where('user_id', $user_id)
-                ->first();
+                    ->where('food_id', $food_id)
+                    ->where('user_id', $user_id)
+                    ->first();
                 // print_r($product);die;
-    
-                if(!empty($product)){
+
+                if (!empty($product)) {
                     return response()->json([
-                        'state'=>0,
+                        'state' => 0,
                         'rating' => $product->rating
-                    ], 200);  
-                }else{
+                    ], 200);
+                } else {
                     return response()->json([
-                        'state'=>1,
+                        'state' => 1,
                         'errors' => 'No rating found!'
                     ], 200);
                 }
-            }else{
+            } else {
                 return response()->json([
-                    'state'=>1,
+                    'state' => 1,
                     'errors' => 'food_id or user_id is not found'
                 ], 200);
             }
-            
         } catch (\Exception $e) {
             return response()->json(['errors' => $e], 403);
         }
@@ -255,12 +276,12 @@ class ProductController extends Controller
             $validator->errors()->add('food_id', trans('messages.food_not_found'));
         }
 
-        $multi_review = Review::where(['food_id' => $request->food_id, 'user_id' => $request->user()->id, 'order_id'=>$request->order_id])->first();
+        $multi_review = Review::where(['food_id' => $request->food_id, 'user_id' => $request->user()->id, 'order_id' => $request->order_id])->first();
         if (isset($multi_review)) {
             return response()->json([
-                 'state'=>1,
-                'errors' => [ 
-                    ['code'=>'review','message'=> trans('messages.already_submitted')]
+                'state' => 1,
+                'errors' => [
+                    ['code' => 'review', 'message' => trans('messages.already_submitted')]
                 ]
             ], 200);
         } else {
@@ -268,7 +289,7 @@ class ProductController extends Controller
         }
 
         if ($validator->errors()->count() > 0) {
-            return response()->json(['state'=>1,'errors' => Helpers::error_processor($validator)], 200);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
 
         $image_array = [];
@@ -291,13 +312,12 @@ class ProductController extends Controller
         $review->attachment = json_encode($image_array);
         $review->save();
 
-        if($product->restaurant)
-        {
+        if ($product->restaurant) {
             $restaurant_rating = RestaurantLogic::update_restaurant_rating($product->restaurant->rating, $request->rating);
             $product->restaurant->rating = $restaurant_rating;
             $product->restaurant->save();
         }
 
-        return response()->json(['state'=>0,'message' => 'successfully review submitted!'], 200);
+        return response()->json(['state' => 0, 'message' => 'successfully review submitted!'], 200);
     }
 }
