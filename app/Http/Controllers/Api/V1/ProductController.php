@@ -42,7 +42,8 @@ class ProductController extends Controller
             ], 200);
         }
         $validator = Validator::make($request->all(), [
-            'name' => 'required'
+            'name' => 'required',
+            'restaurant_id' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -60,19 +61,20 @@ class ProductController extends Controller
         ->whereHas('restaurant', function($q)use($zone_id){
             $q->where('zone_id', $zone_id);
         })
-        ->when($request->category_id, function($query)use($request){
-            $query->whereHas('category',function($q)use($request){
-                return $q->whereId($request->category_id)->orWhere('parent_id', $request->category_id);
-            });
+        // ->when($request->category_id, function($query)use($request){
+        //     $query->whereHas('category',function($q)use($request){
+        //         return $q->whereId($request->category_id)->orWhere('parent_id', $request->category_id);
+        //     });
+        // })
+        ->when($request['restaurant_id'], function($query) use($request){
+            return $query->where('restaurant_id', $request['restaurant_id']);
         })
-        ->when($request->restaurant_id, function($query) use($request){
-            return $query->where('restaurant_id', $request->restaurant_id);
-        })
-        ->where(function ($q) use ($key) {
-            foreach ($key as $value) {
-                $q->orWhere('name', 'like', "%{$value}%");
-            }
-        })
+        // ->where(function ($q) use ($key) {
+        //     foreach ($key as $value) {
+        //         $q->orWhere('name', 'like', "%{$value}%");
+        //     }
+        // })
+        ->where('name', 'like', "%{$request['name']}%")
         ->paginate($limit, ['*'], 'page', $offset);
 
         $data =  [
@@ -82,7 +84,7 @@ class ProductController extends Controller
             'products' => $products->items()
         ];
 
-        $data['products'] = Helpers::product_data_formatting($data['products'], true);
+        // $data['products'] = Helpers::product_data_formatting($data['products'], true);
         return response()->json([
                 'state'=>0,
                 'errors' => $data

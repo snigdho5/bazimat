@@ -31,7 +31,7 @@ class OrderController extends Controller
         if ($validator->fails()) {
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        $order = Order::with(['restaurant', 'delivery_man.rating'])->withCount('details')->where(['id' => $request['order_id'], 'user_id' => $request->user()->id])->Notpos()->first();
+        $order = Order::with(['restaurant', 'delivery_man.rating'])->withCount('details')->where(['id' => $request['order_id']])->Notpos()->first();
         if ($order) {
             $restaurant = $order['restaurant'] ? Helpers::restaurant_data_formatting($order['restaurant']) : $order['restaurant'];
             $restaurant->avg_rating = number_format((float)$restaurant->avg_rating, 2, '.', '');
@@ -66,16 +66,28 @@ class OrderController extends Controller
 
             unset($order['details']);
 
-            if ($order['food_id'] > 0) {
-                $product = Food::find($order['food_id']);
-                if (!empty($product)) {
-                    $order['food_name'] = $product->name;
-                } else {
-                    $order['food_name'] = '';
-                }
-            } else {
-                $order['food_name'] = '';
-            }
+            $cartDetails = DB::table('cart')
+                ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                ->join('food', 'food.id', '=', 'cart.food_id')
+                ->where('cart.order_id', $order['id'])
+                ->where('cart.is_odered', 1)
+                ->get();
+
+            // echo $order['id'];
+            // print_r($cartDetails);die;
+
+            $order['cart'] = $cartDetails;
+
+            // if ($order['food_id'] > 0) {
+            //     $product = Food::find($order['food_id']);
+            //     if (!empty($product)) {
+            //         $order['food_name'] = $product->name;
+            //     } else {
+            //         $order['food_name'] = '';
+            //     }
+            // } else {
+            $order['food_name'] = '';
+            // }
 
             $order['state'] = 0;
             return response()->json($order, 200);
@@ -102,6 +114,7 @@ class OrderController extends Controller
             // 'food_id' => 'required',
             // 'quantity' => 'required',
             'user_id' => 'required',
+            'cart' => 'required',
             'transaction_id' => 'required_if:payment_method,digital_payment',
             'distance' => 'required_if:order_type,delivery',
             'address' => 'required_if:order_type,delivery',
@@ -423,9 +436,15 @@ class OrderController extends Controller
             // OrderDetail::insert($order_details);
             Helpers::send_order_notification($order);
 
+
+
+
             if (!empty($request['cart'])) {
 
-                foreach ($request['cart'] as $key => $value) {
+                $cart = explode(",", $request['cart']);
+
+                foreach ($cart as $key => $value) {
+
                     $data = [
                         'cart_id' => $value
                     ];
@@ -519,16 +538,29 @@ class OrderController extends Controller
                 $data['canceled'] = ($data['canceled'] != '') ? $data['canceled'] : '';
                 $data['refunded'] = ($data['refunded'] != '') ? $data['refunded'] : '';
 
-                if ($data['food_id'] > 0) {
-                    $product = Food::find($data['food_id']);
-                    if (!empty($product)) {
-                        $data['food_name'] = $product->name;
-                    } else {
-                        $data['food_name'] = '';
-                    }
-                } else {
-                    $data['food_name'] = '';
-                }
+
+                $cartDetails = DB::table('cart')
+                    ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                    ->join('food', 'food.id', '=', 'cart.food_id')
+                    ->where('cart.order_id', $data['id'])
+                    ->where('cart.is_odered', 1)
+                    ->get();
+
+                // echo $order['id'];
+                // print_r($cartDetails);die;
+
+                $data['cart'] = $cartDetails;
+
+                // if ($data['food_id'] > 0) {
+                //     $product = Food::find($data['food_id']);
+                //     if (!empty($product)) {
+                //         $data['food_name'] = $product->name;
+                //     } else {
+                //         $data['food_name'] = '';
+                //     }
+                // } else {
+                $data['food_name'] = '';
+                // }
 
 
                 return $data;
@@ -616,8 +648,9 @@ class OrderController extends Controller
         $order = Order::where(['user_id' => $request['user_id'], 'id' => $request['order_id']])->Notpos()->first();
         if (!$order) {
             return response()->json([
+                'state' => 1,
                 'errors' => [
-                    ['state' => 1, 'code' => 'order', 'message' => 'not found!']
+                    ['code' => 'order', 'message' => 'not found!']
                 ]
             ], 200);
         } else if ($order->order_status == 'pending') {
@@ -628,8 +661,9 @@ class OrderController extends Controller
             return response()->json(['state' => 0, 'message' => 'Order canceled'], 200);
         }
         return response()->json([
+            'state' => 1,
             'errors' => [
-                ['state' => 1, 'code' => 'order', 'message' => 'You can not cancle after confirmed!']
+                ['code' => 'order', 'message' => 'You can not cancle after confirmed!']
             ]
         ], 200);
     }

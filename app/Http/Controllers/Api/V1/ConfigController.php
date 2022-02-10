@@ -84,6 +84,7 @@ class ConfigController extends Controller
             'popular_food' => (double)BusinessSetting::where(['key' => 'popular_food'])->first()->value,
             'popular_restaurant' => (double)BusinessSetting::where(['key' => 'popular_restaurant'])->first()->value,
             'new_restaurant' => (double)BusinessSetting::where(['key' => 'new_restaurant'])->first()->value,
+            'state' => 0
         ]);
     }
 
