@@ -74,6 +74,7 @@ class CustomerController extends Controller
     public function add_new_address(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
             'contact_person_name' => 'required',
             'address_type' => 'required',
             'contact_person_number' => 'required',
@@ -105,7 +106,7 @@ class CustomerController extends Controller
        // print  $zone->id;
 
         $address = [
-            'user_id' => $request->user()->id,
+            'user_id' => $request->user_id,
             'contact_person_name' => $request->contact_person_name,
             'contact_person_number' => $request->contact_person_number,
             'address_type' => $request->address_type,

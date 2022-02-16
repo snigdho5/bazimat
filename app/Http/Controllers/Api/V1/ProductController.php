@@ -104,7 +104,8 @@ class ProductController extends Controller
             'total_size' => $products->total(),
             'limit' => $limit,
             'offset' => $offset,
-            'products' => $products->items()
+            'products' => $products->items(),
+            'image_url' => url('') . "/storage/app/public/product/"
         ];
 
         // $data['products'] = Helpers::product_data_formatting($data['products'], true);
@@ -224,7 +225,7 @@ class ProductController extends Controller
                 ], 200);
             }
         } catch (\Exception $e) {
-            return response()->json(['errors' => $e], 403);
+            return response()->json(['errors' => $e], 200);
         }
     }
 
@@ -258,13 +259,14 @@ class ProductController extends Controller
                 ], 200);
             }
         } catch (\Exception $e) {
-            return response()->json(['errors' => $e], 403);
+            return response()->json(['errors' => $e], 200);
         }
     }
 
     public function submit_product_review(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
             'food_id' => 'required',
             'order_id' => 'required',
             'comment' => 'required',
@@ -276,7 +278,7 @@ class ProductController extends Controller
             $validator->errors()->add('food_id', trans('messages.food_not_found'));
         }
 
-        $multi_review = Review::where(['food_id' => $request->food_id, 'user_id' => $request->user()->id, 'order_id' => $request->order_id])->first();
+        $multi_review = Review::where(['food_id' => $request->food_id, 'user_id' => $request->user_id, 'order_id' => $request->order_id])->first();
         if (isset($multi_review)) {
             return response()->json([
                 'state' => 1,
@@ -304,7 +306,7 @@ class ProductController extends Controller
             }
         }
 
-        $review->user_id = $request->user()->id;
+        $review->user_id = $request->user_id;
         $review->food_id = $request->food_id;
         $review->order_id = $request->order_id;
         $review->comment = $request->comment;

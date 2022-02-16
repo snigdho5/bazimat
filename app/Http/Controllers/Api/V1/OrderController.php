@@ -501,6 +501,7 @@ class OrderController extends Controller
             ->withCount('details')
             ->where(['user_id' => $user_id])
             ->where(['order_status' => 'success'])
+            ->orWhere(['order_status' => 'canceled'])
             ->Notpos()->get()->map(function ($data) {
                 $data['delivery_address'] = $data['delivery_address'] ? json_decode($data['delivery_address']) : $data['delivery_address'];
                 $restaurant = $data['restaurant'] ? Helpers::restaurant_data_formatting($data['restaurant']) : $data['restaurant'];
@@ -689,6 +690,54 @@ class OrderController extends Controller
                 ['code' => 'order', 'message' => 'You can not request for refund before delivery!']
             ]
         ], 200);
+    }
+
+    
+
+    public function repeat_order(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
+            'order_id' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['state'=>1,'errors' => Helpers::error_processor($validator)], 200);
+        }
+        
+        
+        $cartDetails = DB::table('cart')
+            ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+            ->join('food', 'food.id', '=', 'cart.food_id')
+            ->where('cart.user_id', $request['user_id'])
+            ->where('cart.order_id', $request['order_id'])
+            ->where('cart.is_odered', 1)
+            ->get();
+
+
+        if (isset($cartDetails[0]->cart_id)) {
+            foreach ($cartDetails as $key => $value) {
+                $cartData[] = array(
+                    'cart_id' => $value->cart_id,
+                    'user_id' => $value->user_id,
+                    'restaurant_id' => $value->restaurant_id,
+                    'food_id' => $value->food_id,
+                    'food_name' => $value->food_name,
+                    // 'food_image' => $value->food_image,
+                    'food_image' => url('storage/app/public/product/' . $value->food_image),
+                    'quantity' => $value->quantity,
+                    'tax' => number_format((float)$value->tax, 2, '.', ''),
+                    'food_amount' => number_format((float)$value->food_amount, 2, '.', ''),
+                    'is_odered' => $value->is_odered,
+                    'added_dtime' => $value->added_dtime
+                );
+            }
+            return response()->json(['state' => 0, 'message' => 'found!', 'respData' => $cartData], 200);
+        } else {
+            return response()->json(['state' => 1, 'message' => 'Cart is empty!', 'respData' => []], 200);
+        }
+
     }
 
     public function update_payment_method(Request $request)

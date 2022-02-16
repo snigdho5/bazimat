@@ -53,7 +53,7 @@ Route::group(['namespace' => 'Admin', 'as' => 'admin.'], function () {
             Route::delete('delete/{id}', 'EmployeeController@distroy')->name('delete');
             Route::post('search', 'EmployeeController@search')->name('search');
         });
-        Route::post('food/variant-price', 'FoodController@variant_price')->name('food.variant-price');\
+        Route::post('food/variant-price', 'FoodController@variant_price')->name('food.variant-price');
         Route::group(['prefix' => 'food', 'as' => 'food.', 'middleware' => ['module:food']], function () {
             Route::get('add-new', 'FoodController@index')->name('add-new');
             Route::post('variant-combination', 'FoodController@variant_combination')->name('variant-combination');

@@ -202,6 +202,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
             Route::get('details', 'OrderController@get_order_details');
             Route::post('place', 'OrderController@place_order');
             Route::put('cancel', 'OrderController@cancel_order');
+            Route::get('repeat', 'OrderController@repeat_order');
             Route::put('refund-request', 'OrderController@refund_request');
             Route::get('track', 'OrderController@track_order');
             Route::put('payment-method', 'OrderController@update_payment_method');

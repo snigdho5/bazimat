@@ -36,7 +36,8 @@ class OrderController extends Controller
             {
                 return $query->where('order_status','pending');
             }
-            return $query->where('order_status','pending')->where('order_type', 'take_away');
+            return $query->where('order_status','pending');
+            // return $query->where('order_status','pending')->where('order_type', 'take_away');
         })
         ->when($status == 'cooking', function($query){
             return $query->where('order_status','processing');
@@ -105,8 +106,8 @@ class OrderController extends Controller
 
     public function details(Request $request,$id)
     {
-        $order = Order::with('details')->where(['id' => $id, 'restaurant_id' => Helpers::get_restaurant_id()])->first();
-        if (isset($order)) {
+        $order = Order::with('details')->where(['id' => $id])->first();
+        if ($order) {
             return view('vendor-views.order.order-view', compact('order'));
         } else {
             Toastr::info('No more orders!');

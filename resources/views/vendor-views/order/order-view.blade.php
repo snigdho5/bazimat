@@ -17,7 +17,7 @@
 @endpush
 
 @section('content')
-    <?php $campaign_order=$order->details[0]->campaign?true:false; ?>
+    <?php //$campaign_order=$order->details[0]->campaign?true:false; ?>
     <div class="content container-fluid">
         <!-- Page Header -->
         <div class="page-header d-print-none">
@@ -78,7 +78,7 @@
                                 <span class="legend-indicator bg-success"></span>{{__('messages.campaign_order')}}
                             </span>
                         @endif
-                        @if($order->edited)
+                        @if($order['edited'])
                             <span class="badge badge-soft-dark ml-sm-3">
                                 <span class="legend-indicator bg-dark"></span>{{__('messages.edited')}}
                             </span>
@@ -184,14 +184,14 @@
                         $total_addon_price = 0;
                         $product_price = 0;
                         $restaurant_discount_amount = 0;
-                        if($order->coupon_code)
+                        if($order['coupon_code'])
                         {
                             $coupon = \App\Models\Coupon::where(['code' => $request['coupon_code']])->first();
                         }
                         $product_price=0;
                         $total_addon_price=0;
                     ?>
-                    @foreach($order->details as $key=>$detail)
+                    @foreach($order['details'] as $key=>$detail)
                         @if($detail->food )
                             <!-- Media -->
                             <div class="media">
