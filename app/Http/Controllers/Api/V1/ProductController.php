@@ -233,11 +233,15 @@ class ProductController extends Controller
     {
         $food_id = $request->food_id;
         $user_id = $request->user_id;
+        $order_id = $request->order_id;
+        $cart_id = $request->cart_id;
         try {
             if ($food_id && $user_id) {
                 $product =   DB::table('reviews')
                     ->where('food_id', $food_id)
                     ->where('user_id', $user_id)
+                    ->where('order_id', $order_id)
+                    ->where('cart_id', $cart_id)
                     ->first();
                 // print_r($product);die;
 
@@ -269,6 +273,7 @@ class ProductController extends Controller
             'user_id' => 'required',
             'food_id' => 'required',
             'order_id' => 'required',
+            'cart_id' => 'required',
             'comment' => 'required',
             'rating' => 'required|numeric|max:5',
         ]);
@@ -278,7 +283,7 @@ class ProductController extends Controller
             $validator->errors()->add('food_id', trans('messages.food_not_found'));
         }
 
-        $multi_review = Review::where(['food_id' => $request->food_id, 'user_id' => $request->user_id, 'order_id' => $request->order_id])->first();
+        $multi_review = Review::where(['food_id' => $request->food_id, 'user_id' => $request->user_id, 'order_id' => $request->order_id, 'cart_id' => $request->cart_id])->first();
         if (isset($multi_review)) {
             return response()->json([
                 'state' => 1,
@@ -309,6 +314,7 @@ class ProductController extends Controller
         $review->user_id = $request->user_id;
         $review->food_id = $request->food_id;
         $review->order_id = $request->order_id;
+        $review->cart_id = $request->cart_id;
         $review->comment = $request->comment;
         $review->rating = $request->rating;
         $review->attachment = json_encode($image_array);

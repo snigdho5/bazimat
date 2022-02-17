@@ -692,7 +692,7 @@ class OrderController extends Controller
         ], 200);
     }
 
-    
+
 
     public function repeat_order(Request $request)
     {
@@ -703,10 +703,10 @@ class OrderController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['state'=>1,'errors' => Helpers::error_processor($validator)], 200);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        
-        
+
+
         $cartDetails = DB::table('cart')
             ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
             ->join('food', 'food.id', '=', 'cart.food_id')
@@ -717,9 +717,26 @@ class OrderController extends Controller
 
 
         if (isset($cartDetails[0]->cart_id)) {
+
+
             foreach ($cartDetails as $key => $value) {
+
+
+                $insData = [
+                    'user_id' => $value->user_id,
+                    'restaurant_id' => $value->restaurant_id,
+                    'food_id' => $value->food_id,
+                    'quantity' => $value->quantity,
+                    'tax' => number_format((float)$value->tax, 2, '.', ''),
+                    'food_amount' => number_format((float)$value->food_amount, 2, '.', ''),
+                    'is_odered' => 0,
+                    'added_dtime' => now()
+                ];
+                $cart_id = DB::table('cart')->insertGetId($insData);
+
+
                 $cartData[] = array(
-                    'cart_id' => $value->cart_id,
+                    'cart_id' => $cart_id,
                     'user_id' => $value->user_id,
                     'restaurant_id' => $value->restaurant_id,
                     'food_id' => $value->food_id,
@@ -737,7 +754,6 @@ class OrderController extends Controller
         } else {
             return response()->json(['state' => 1, 'message' => 'Cart is empty!', 'respData' => []], 200);
         }
-
     }
 
     public function update_payment_method(Request $request)

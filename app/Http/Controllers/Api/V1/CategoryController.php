@@ -34,9 +34,9 @@ class CategoryController extends Controller
 
     public function get_products($id, Request $request)
     {
+        $productimgpath = url('')."/storage/app/public/product/";
         if (!$request->hasHeader('zoneId')) {
             $errors = [];
-            $productimgpath = url('')."/storage/app/public/product/";
             array_push($errors, ['code' => 'zoneId', 'message' => 'Zone id is required!']);
             return response()->json([
                 'state' => 1,
