@@ -500,8 +500,7 @@ class OrderController extends Controller
         $orders = Order::with(['restaurant', 'delivery_man.rating'])
             ->withCount('details')
             ->where(['user_id' => $user_id])
-            ->where(['order_status' => 'success'])
-            ->orWhere(['order_status' => 'canceled'])
+            ->whereRaw("(order_status = 'success' OR order_status = 'canceled')")
             ->Notpos()->get()->map(function ($data) {
                 $data['delivery_address'] = $data['delivery_address'] ? json_decode($data['delivery_address']) : $data['delivery_address'];
                 $restaurant = $data['restaurant'] ? Helpers::restaurant_data_formatting($data['restaurant']) : $data['restaurant'];
@@ -539,7 +538,6 @@ class OrderController extends Controller
                 $data['canceled'] = ($data['canceled'] != '') ? $data['canceled'] : '';
                 $data['refunded'] = ($data['refunded'] != '') ? $data['refunded'] : '';
 
-
                 $cartDetails = DB::table('cart')
                     ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
                     ->join('food', 'food.id', '=', 'cart.food_id')
@@ -563,9 +561,9 @@ class OrderController extends Controller
                 $data['food_name'] = '';
                 // }
 
-
                 return $data;
             });
+            
 
         if (!empty($orders) && isset($orders[0]->id)) {
             return response()->json(['state' => 0, 'message' => 'Found!', 'errors' => $orders], 200);
