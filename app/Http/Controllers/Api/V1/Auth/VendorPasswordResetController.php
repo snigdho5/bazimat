@@ -19,7 +19,7 @@ class VendorPasswordResetController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
 
         $vendor = Vendor::Where(['email' => $request['email']])->first();
@@ -31,12 +31,12 @@ class VendorPasswordResetController extends Controller
                 'token' => $token,
                 'created_at' => now(),
             ]);
-            Mail::to($vendor['email'])->send(new \App\Mail\PasswordResetMail($token));
-            return response()->json(['message' => 'Email sent successfully.'], 200);
+            // Mail::to($vendor['email'])->send(new \App\Mail\PasswordResetMail($token));
+            return response()->json(['state' => 0, 'message' => 'Email sent successfully.'], 200);
         }
-        return response()->json(['errors' => [
+        return response()->json(['state' => 1, 'errors' => [
             ['code' => 'not-found', 'message' => 'Email not found!']
-        ]], 404);
+        ]], 200);
     }
 
     public function verify_token(Request $request)

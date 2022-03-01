@@ -19,7 +19,7 @@ class VendorLoginController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['state'=>1,'errors' => Helpers::error_processor($validator)], 200);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
 
         $data = [
@@ -30,10 +30,9 @@ class VendorLoginController extends Controller
         if (auth('vendor')->attempt($data)) {
             $token = $this->genarate_token($request['email']);
             $vendor = Vendor::where(['email' => $request['email']])->first();
-            if(!$vendor->status)
-            {
+            if (!$vendor->status) {
                 return response()->json([
-                    'state'=>1,
+                    'state' => 1,
                     'errors' => [
                         ['code' => 'auth-002', 'message' => trans('messages.inactive_vendor_warning')]
                     ]
@@ -41,11 +40,12 @@ class VendorLoginController extends Controller
             }
             $vendor->auth_token = $token;
             $vendor->save();
-            return response()->json(['token' => $token, 'zone_wise_topic'=> $vendor->restaurants[0]->zone->restaurant_wise_topic], 200);
+            return response()->json(['state' => 0,'message' => 'Successfully logged in!.', 'token' => $token, 'zone_wise_topic' => $vendor->restaurants[0]->zone->restaurant_wise_topic], 200);
         } else {
             $errors = [];
-            array_push($errors, ['state'=>1,'code' => 'auth-001', 'message' => 'Unauthorized.']);
+            array_push($errors, ['code' => 'auth-001', 'message' => 'Unauthorized.']);
             return response()->json([
+                'state' => 1, 
                 'errors' => $errors
             ], 200);
         }
@@ -55,8 +55,7 @@ class VendorLoginController extends Controller
     {
         $token = Str::random(120);
         $is_available = Vendor::where('auth_token', $token)->where('email', '!=', $email)->count();
-        if($is_available)
-        {
+        if ($is_available) {
             $this->genarate_token($email);
         }
         return $token;

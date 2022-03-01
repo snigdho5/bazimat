@@ -42,16 +42,17 @@ Route::group(['namespace' => 'Api\V1'], function () {
         });
     });
 
+
     Route::group(['prefix' => 'delivery-man'], function () {
         Route::get('last-location', 'DeliverymanController@get_last_location');
 
 
-        Route::group(['prefix' => 'reviews','middleware'=>['auth:api']], function () {
+        Route::group(['prefix' => 'reviews', 'middleware' => ['auth:api']], function () {
             Route::get('/{delivery_man_id}', 'DeliveryManReviewController@get_reviews');
             Route::get('rating/{delivery_man_id}', 'DeliveryManReviewController@get_rating');
             Route::post('/submit', 'DeliveryManReviewController@submit_review');
         });
-        Route::group(['middleware'=>['dm.api']], function () {
+        Route::group(['middleware' => ['dm.api']], function () {
             Route::get('profile', 'DeliverymanController@get_profile');
             Route::get('notifications', 'DeliverymanController@get_notifications');
             Route::put('update-profile', 'DeliverymanController@update_profile');
@@ -68,8 +69,8 @@ Route::group(['namespace' => 'Api\V1'], function () {
             Route::put('update-fcm-token', 'DeliverymanController@update_fcm_token');
         });
     });
-    
-    Route::group(['prefix' => 'vendor', 'namespace' => 'Vendor', 'middleware'=>['vendor.api']], function () {
+
+    Route::group(['prefix' => 'vendor', 'namespace' => 'Vendor', 'middleware' => ['vendor.api']], function () {
         Route::get('notifications', 'VendorController@get_notifications');
         Route::get('profile', 'VendorController@get_profile');
         Route::post('update-active-status', 'VendorController@active_status');
@@ -88,14 +89,14 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::get('get-products-list', 'VendorController@get_products');
         Route::put('update-bank-info', 'VendorController@update_bank_info');
         Route::post('request-withdraw', 'VendorController@request_withdraw');
-        
+
         // Business setup
         Route::put('update-business-setup', 'BusinessSettingsController@update_restaurant_setup');
         // Attributes
         Route::get('attributes', 'AttributeController@list');
 
         // Addon
-        Route::group(['prefix'=>'addon'], function(){
+        Route::group(['prefix' => 'addon'], function () {
             Route::get('/', 'AddOnController@list');
             Route::post('store', 'AddOnController@store');
             Route::put('update', 'AddOnController@update');
@@ -113,7 +114,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
             Route::post('search', 'DeliveryManController@search');
         });
         // Food
-        Route::group(['prefix'=>'product'], function(){
+        Route::group(['prefix' => 'product'], function () {
             Route::post('store', 'FoodController@store');
             Route::put('update', 'FoodController@update');
             Route::delete('delete', 'FoodController@delete');
@@ -122,7 +123,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
         });
 
         // POS
-        Route::group(['prefix'=>'pos'], function(){
+        Route::group(['prefix' => 'pos'], function () {
             Route::get('orders', 'POSController@order_list');
             Route::post('place-order', 'POSController@place_order');
             Route::get('customers', 'POSController@get_customers');
@@ -145,7 +146,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::get('search', 'ProductController@get_searched_products');
         Route::get('details/{id}', 'ProductController@get_product');
         Route::get('related-products/{food_id}', 'ProductController@get_related_products');
-        Route::get('reviews/{food_id}', 'ProductController@get_product_reviews'); 
+        Route::get('reviews/{food_id}', 'ProductController@get_product_reviews');
         Route::get('rating', 'ProductController@get_product_rating');
         Route::get('user-rating', 'ProductController@get_product_rating_by_user');
         // Route::get('rating/{food_id}', 'ProductController@get_product_rating');
@@ -187,7 +188,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::post('age-verification', 'CustomerController@agestatus');
         Route::post('age', 'CustomerController@ageverification');
         Route::get('agedetail', 'CustomerController@age_detail');
-        
+
 
         Route::group(['prefix' => 'address'], function () {
             Route::get('list', 'CustomerController@address_list');
@@ -209,7 +210,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
             Route::put('payment-method', 'OrderController@update_payment_method');
         });
 
-        
+
         Route::group(['prefix' => 'cart'], function () {
             Route::post('get-cart', 'OrderController@cart_list');
             Route::post('add-to-cart', 'OrderController@add_to_cart');
@@ -235,7 +236,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
     Route::group(['prefix' => 'banners'], function () {
         Route::get('/', 'BannerController@get_banners');
     });
-   /*Route::group(['prefix' => 'cust'], function () {
+    /*Route::group(['prefix' => 'cust'], function () {
          Route::get('agedetail', 'CustomerController@age_detail');
     });
     */
