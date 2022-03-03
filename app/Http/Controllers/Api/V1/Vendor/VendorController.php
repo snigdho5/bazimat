@@ -113,14 +113,14 @@ class VendorController extends Controller
         // print_r($get_vendor);die;
 
         // if (!empty($get_vendor)) {
-            if ($request['new_password'] == $request['confirm_password']) {
-                Vendor::where(['email' => $request['email']])->update([
-                    'password' => $new_pass
-                ]);
-                return response()->json(['state' => 0, 'message' => 'Password updated successfully'], 200);
-            } else {
-                return response()->json(['state' => 1, 'message' => 'New and confirm password did not match!'], 200);
-            }
+        if ($request['new_password'] == $request['confirm_password']) {
+            Vendor::where(['email' => $request['email']])->update([
+                'password' => $new_pass
+            ]);
+            return response()->json(['state' => 0, 'message' => 'Password updated successfully'], 200);
+        } else {
+            return response()->json(['state' => 1, 'message' => 'New and confirm password did not match!'], 200);
+        }
         // } else {
         //     return response()->json(['state' => 1, 'message' => 'Old password did not match!'], 200);
         // }
