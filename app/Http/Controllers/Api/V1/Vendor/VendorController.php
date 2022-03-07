@@ -128,6 +128,168 @@ class VendorController extends Controller
 
     public function get_current_orders(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'restaurant_id' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+        $vendor = $request['vendor'];
+
+        $orders = Order::where('restaurant_id', $request['restaurant_id'])
+            ->where('order_status', 'pending')
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->get();
+        // $orders = Helpers::order_data_formatting($orders, true);
+
+        if (isset($orders[0]->id)) {
+            foreach ($orders as $key => $value) {
+
+                $cartDetails = DB::table('cart')
+                ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                ->join('food', 'food.id', '=', 'cart.food_id')
+                ->where('cart.order_id', $value->id)
+                ->where('cart.is_odered', 1)
+                ->get();
+
+                $orders_f['restaurants'][] = array(
+                    'id' => $value->id,
+                    'user_id' => $value->user_id,
+                    'food_id' => $value->food_id,
+                    'quantity' => $value->quantity,
+                    'order_amount' => $value->order_amount,
+                    'coupon_discount_amount' => $value->coupon_discount_amount,
+                    'coupon_discount_title' => $value->coupon_discount_title,
+                    'payment_status' => $value->payment_status,
+                    'order_status' => $value->order_status,
+                    'total_tax_amount' => $value->total_tax_amount,
+                    'payment_method' => $value->payment_method,
+                    'transaction_reference' => ($value->transaction_reference != '') ? $value->transaction_reference : '',
+                    'delivery_man_id' => ($value->delivery_man_id != '') ? $value->delivery_man_id : '',
+                    'coupon_code' => ($value->coupon_code != '') ? $value->coupon_code : '',
+                    'order_note' => ($value->order_note != '') ? $value->order_note : '',
+                    'order_type' => ($value->order_type != '') ? $value->order_type : '',
+                    'checked' => $value->checked,
+                    'restaurant_id' => $value->restaurant_id,
+                    'created_at' => $value->created_at,
+                    'updated_at' => $value->updated_at,
+                    'delivery_charge' => $value->delivery_charge,
+                    'schedule_at' => $value->schedule_at,
+                    'callback' => ($value->callback != '') ? $value->callback : '',
+                    'otp' => $value->otp,
+                    'pending' => ($value->pending != '') ? $value->pending : '',
+                    'accepted' => ($value->accepted != '') ? $value->accepted : '',
+                    'confirmed' => ($value->confirmed != '') ? $value->confirmed : '',
+                    'processing' => ($value->processing != '') ? $value->processing : '',
+                    'handover' => ($value->handover != '') ? $value->handover : '',
+                    'picked_up' => ($value->picked_up != '') ? $value->picked_up : '',
+                    'delivered' => ($value->delivered != '') ? $value->delivered : '',
+                    'canceled' => ($value->canceled != '') ? $value->canceled : '',
+                    'refund_requested' => ($value->refund_requested != '') ? $value->refund_requested : '',
+                    'refunded' => ($value->refunded != '') ? $value->refunded : '',
+                    'transaction_id' => $value->transaction_id,
+                    'delivery_address' => $value->delivery_address,
+                    'scheduled' => $value->scheduled,
+                    'restaurant_discount_amount' => $value->restaurant_discount_amount,
+                    'original_delivery_charge' => $value->original_delivery_charge,
+                    'failed' => ($value->failed != '') ? $value->failed : '',
+                    'adjusment' => $value->adjusment,
+                    'edited' => $value->edited,
+                    'cart_details' => $cartDetails
+                );
+            }
+            return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
+        } else {
+            return response()->json(['state' => 1, 'message' => 'not found', 'respData' => []], 200);
+        }
+    }
+
+    public function get_completed_orders(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'restaurant_id' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+        $vendor = $request['vendor'];
+
+        $orders = Order::where('restaurant_id', $request['restaurant_id'])
+            ->whereIn('order_status', ['handover', 'picked_up'])
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->get();
+        // $orders = Helpers::order_data_formatting($orders, true);
+
+        if (isset($orders[0]->id)) {
+            foreach ($orders as $key => $value) {
+                
+                $cartDetails = DB::table('cart')
+                ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                ->join('food', 'food.id', '=', 'cart.food_id')
+                ->where('cart.order_id', $value->id)
+                ->where('cart.is_odered', 1)
+                ->get();
+
+                
+                $orders_f['restaurants'][] = array(
+                    'id' => $value->id,
+                    'user_id' => $value->user_id,
+                    'food_id' => $value->food_id,
+                    'quantity' => $value->quantity,
+                    'order_amount' => $value->order_amount,
+                    'coupon_discount_amount' => $value->coupon_discount_amount,
+                    'coupon_discount_title' => $value->coupon_discount_title,
+                    'payment_status' => $value->payment_status,
+                    'order_status' => $value->order_status,
+                    'total_tax_amount' => $value->total_tax_amount,
+                    'payment_method' => $value->payment_method,
+                    'transaction_reference' => ($value->transaction_reference != '') ? $value->transaction_reference : '',
+                    'delivery_man_id' => ($value->delivery_man_id != '') ? $value->delivery_man_id : '',
+                    'coupon_code' => ($value->coupon_code != '') ? $value->coupon_code : '',
+                    'order_note' => ($value->order_note != '') ? $value->order_note : '',
+                    'order_type' => ($value->order_type != '') ? $value->order_type : '',
+                    'checked' => $value->checked,
+                    'restaurant_id' => $value->restaurant_id,
+                    'created_at' => $value->created_at,
+                    'updated_at' => $value->updated_at,
+                    'delivery_charge' => $value->delivery_charge,
+                    'schedule_at' => $value->schedule_at,
+                    'callback' => ($value->callback != '') ? $value->callback : '',
+                    'otp' => $value->otp,
+                    'pending' => ($value->pending != '') ? $value->pending : '',
+                    'accepted' => ($value->accepted != '') ? $value->accepted : '',
+                    'confirmed' => ($value->confirmed != '') ? $value->confirmed : '',
+                    'processing' => ($value->processing != '') ? $value->processing : '',
+                    'handover' => ($value->handover != '') ? $value->handover : '',
+                    'picked_up' => ($value->picked_up != '') ? $value->picked_up : '',
+                    'delivered' => ($value->delivered != '') ? $value->delivered : '',
+                    'canceled' => ($value->canceled != '') ? $value->canceled : '',
+                    'refund_requested' => ($value->refund_requested != '') ? $value->refund_requested : '',
+                    'refunded' => ($value->refunded != '') ? $value->refunded : '',
+                    'transaction_id' => $value->transaction_id,
+                    'delivery_address' => $value->delivery_address,
+                    'scheduled' => $value->scheduled,
+                    'restaurant_discount_amount' => $value->restaurant_discount_amount,
+                    'original_delivery_charge' => $value->original_delivery_charge,
+                    'failed' => ($value->failed != '') ? $value->failed : '',
+                    'adjusment' => $value->adjusment,
+                    'edited' => $value->edited,
+                    'cart_details' => $cartDetails
+                );
+            }
+            return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
+        } else {
+            return response()->json(['state' => 1, 'message' => 'not found', 'respData' => []], 200);
+        }
+
+    }
+
+    public function get_current_orders_old(Request $request)
+    {
         $vendor = $request['vendor'];
 
         $orders = Order::whereHas('restaurant.vendor', function ($query) use ($vendor) {
@@ -155,7 +317,7 @@ class VendorController extends Controller
         return response()->json($orders, 200);
     }
 
-    public function get_completed_orders(Request $request)
+    public function get_completed_orders_old(Request $request)
     {
         $vendor = $request['vendor'];
 

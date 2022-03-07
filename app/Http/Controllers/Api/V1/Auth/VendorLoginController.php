@@ -30,6 +30,7 @@ class VendorLoginController extends Controller
         if (auth('vendor')->attempt($data)) {
             $token = $this->genarate_token($request['email']);
             $vendor = Vendor::where(['email' => $request['email']])->first();
+
             if (!$vendor->status) {
                 return response()->json([
                     'state' => 1,
@@ -40,7 +41,7 @@ class VendorLoginController extends Controller
             }
             $vendor->auth_token = $token;
             $vendor->save();
-            return response()->json(['state' => 0,'message' => 'Successfully logged in!.', 'token' => $token, 'zone_wise_topic' => $vendor->restaurants[0]->zone->restaurant_wise_topic], 200);
+            return response()->json(['state' => 0,'message' => 'Successfully logged in!.', 'token' => $token, 'id' => $vendor->id, 'zone_wise_topic' => $vendor->restaurants[0]->zone->restaurant_wise_topic], 200);
         } else {
             $errors = [];
             array_push($errors, ['code' => 'auth-001', 'message' => 'Unauthorized.']);
