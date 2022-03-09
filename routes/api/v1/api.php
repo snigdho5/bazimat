@@ -132,6 +132,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
 
     Route::group(['prefix' => 'config'], function () {
         Route::get('/', 'ConfigController@configuration');
+        Route::get('/restaurant', 'ConfigController@configuration_restaurant');
         Route::get('/get-zone-id', 'ConfigController@get_zone');
         Route::get('place-api-autocomplete', 'ConfigController@place_api_autocomplete');
         Route::get('distance-api', 'ConfigController@distance_api');

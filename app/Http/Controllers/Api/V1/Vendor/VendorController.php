@@ -138,7 +138,8 @@ class VendorController extends Controller
         $vendor = $request['vendor'];
 
         $orders = Order::where('restaurant_id', $request['restaurant_id'])
-            ->where('order_status', 'pending')
+            // ->where('order_status', 'pending')
+            ->whereIn('order_status', ['pending', 'accepted', 'confirmed', 'rejected', 'processing'])
             ->Notpos()
             ->orderBy('schedule_at', 'desc')
             ->get();
@@ -148,13 +149,13 @@ class VendorController extends Controller
             foreach ($orders as $key => $value) {
 
                 $cartDetails = DB::table('cart')
-                ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
-                ->join('food', 'food.id', '=', 'cart.food_id')
-                ->where('cart.order_id', $value->id)
-                ->where('cart.is_odered', 1)
-                ->get();
+                    ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                    ->join('food', 'food.id', '=', 'cart.food_id')
+                    ->where('cart.order_id', $value->id)
+                    ->where('cart.is_odered', 1)
+                    ->get();
 
-                $orders_f['restaurants'][] = array(
+                $orders_f[] = array(
                     'id' => $value->id,
                     'user_id' => $value->user_id,
                     'food_id' => $value->food_id,
@@ -200,9 +201,9 @@ class VendorController extends Controller
                     'cart_details' => $cartDetails
                 );
             }
-            return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
+            return response()->json(['state' => 0, 'message' => 'found', 'respData' => (array)$orders_f], 200);
         } else {
-            return response()->json(['state' => 1, 'message' => 'not found', 'respData' => []], 200);
+            return response()->json(['state' => 0, 'message' => 'not found', 'respData' => []], 200);
         }
     }
 
@@ -218,7 +219,8 @@ class VendorController extends Controller
         $vendor = $request['vendor'];
 
         $orders = Order::where('restaurant_id', $request['restaurant_id'])
-            ->whereIn('order_status', ['handover', 'picked_up'])
+            ->where('order_status', 'handover')
+            // ->whereIn('order_status', ['handover', 'picked_up'])
             ->Notpos()
             ->orderBy('schedule_at', 'desc')
             ->get();
@@ -226,16 +228,16 @@ class VendorController extends Controller
 
         if (isset($orders[0]->id)) {
             foreach ($orders as $key => $value) {
-                
-                $cartDetails = DB::table('cart')
-                ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
-                ->join('food', 'food.id', '=', 'cart.food_id')
-                ->where('cart.order_id', $value->id)
-                ->where('cart.is_odered', 1)
-                ->get();
 
-                
-                $orders_f['restaurants'][] = array(
+                $cartDetails = DB::table('cart')
+                    ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                    ->join('food', 'food.id', '=', 'cart.food_id')
+                    ->where('cart.order_id', $value->id)
+                    ->where('cart.is_odered', 1)
+                    ->get();
+
+
+                $orders_f[] = array(
                     'id' => $value->id,
                     'user_id' => $value->user_id,
                     'food_id' => $value->food_id,
@@ -278,14 +280,14 @@ class VendorController extends Controller
                     'failed' => ($value->failed != '') ? $value->failed : '',
                     'adjusment' => $value->adjusment,
                     'edited' => $value->edited,
-                    'cart_details' => $cartDetails
+                    'cart_details' => $cartDetails,
+                    'delivery_boy_name' => 'Rajat Sharma'
                 );
             }
             return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
         } else {
-            return response()->json(['state' => 1, 'message' => 'not found', 'respData' => []], 200);
+            return response()->json(['state' => 0, 'message' => 'not found', 'respData' => []], 200);
         }
-
     }
 
     public function get_current_orders_old(Request $request)
@@ -337,7 +339,7 @@ class VendorController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'order_id' => 'required',
-            'status' => 'required|in:confirmed,processing,handover,delivered'
+            'status' => 'required|in:accepted,confirmed,rejected,processing,handover'
         ]);
 
         $validator->sometimes('otp', 'required', function ($request) {
@@ -345,7 +347,7 @@ class VendorController extends Controller
         });
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
 
         $vendor = $request['vendor'];
@@ -359,33 +361,37 @@ class VendorController extends Controller
 
         if ($request['status'] == "confirmed" && config('order_confirmation_model') == 'deliveryman' && $order->order_type != 'take_away') {
             return response()->json([
+                'state' => 1, 
                 'errors' => [
                     ['code' => 'order-confirmation-model', 'message' => trans('messages.order_confirmation_warning')]
                 ]
-            ], 403);
+            ], 200);
         }
 
         if ($order->picked_up != null) {
             return response()->json([
+                'state' => 1, 
                 'errors' => [
                     ['code' => 'status', 'message' => trans('messages.You_can_not_change_status_after_picked_up_by_delivery_man')]
                 ]
-            ], 401);
+            ], 200);
         }
 
         if ($request['status'] == 'delivered' && $order->order_type != 'take_away') {
             return response()->json([
+                'state' => 1, 
                 'errors' => [
                     ['code' => 'status', 'message' => trans('messages.you_can_not_delivered_delivery_order')]
                 ]
-            ], 401);
+            ], 200);
         }
         if (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered' && $order->otp != $request['otp']) {
             return response()->json([
+                'state' => 1, 
                 'errors' => [
                     ['code' => 'otp', 'message' => 'Not matched']
                 ]
-            ], 401);
+            ], 200);
         }
 
         if ($request->status == 'delivered' && $order->transaction == null) {
@@ -402,8 +408,14 @@ class VendorController extends Controller
             $order->customer->increment('order_count');
         }
 
-        $order->order_status = $request['status'];
-        $order[$request['status']] = now();
+        if ($request['status'] == 'rejected') {
+            $order->order_status = $request['status'];
+            $order['canceled'] = now();
+        } else {
+            $order->order_status = $request['status'];
+            $order[$request['status']] = now();
+        }
+
         $order->save();
 
         // $fcm_token=$order->customer->cm_firebase_token;
@@ -434,7 +446,7 @@ class VendorController extends Controller
         // }
         Helpers::send_order_notification($order);
 
-        return response()->json(['message' => 'Status updated'], 200);
+        return response()->json(['state' => 0, 'message' => 'Status updated'], 200);
     }
 
     public function get_order_details(Request $request)
@@ -443,7 +455,7 @@ class VendorController extends Controller
             'order_id' => 'required'
         ]);
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 403);
         }
         $vendor = $request['vendor'];
 
