@@ -714,6 +714,12 @@ class VendorController extends Controller
             ->orderBy('schedule_at', 'desc')
             ->sum('order_amount');
 
+        $cancelled_orders = Order::where('restaurant_id', $request['restaurant_id'])
+            ->where('order_status', 'cancelled')
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->count();
+
         //today
         $count_orders_today = Order::where('restaurant_id', $request['restaurant_id'])
             ->whereDate('created_at', date('Y-m-d'))
@@ -727,11 +733,6 @@ class VendorController extends Controller
             ->orderBy('schedule_at', 'desc')
             ->sum('order_amount');
 
-        $cancelled_orders = Order::where('restaurant_id', $request['restaurant_id'])
-            ->where('order_status', 'cancelled')
-            ->Notpos()
-            ->orderBy('schedule_at', 'desc')
-            ->count();
 
         // print_r($count_orders_all);die;
 
