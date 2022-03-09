@@ -254,11 +254,11 @@ class Helpers
                 }
             }
         } else {
-            if ($item->food) {
-                $foods[] = self::product_data_formatting($item->food);
+            if ($data->food) {
+                $foods[] = self::product_data_formatting($data->food);
             }
-            if ($item->restaurant) {
-                $restaurants[] = self::restaurant_data_formatting($item->restaurant);
+            if ($data->restaurant) {
+                $restaurants[] = self::restaurant_data_formatting($data->restaurant);
             }
         }
 
