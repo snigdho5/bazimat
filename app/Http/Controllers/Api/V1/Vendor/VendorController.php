@@ -361,7 +361,7 @@ class VendorController extends Controller
 
         if ($request['status'] == "confirmed" && config('order_confirmation_model') == 'deliveryman' && $order->order_type != 'take_away') {
             return response()->json([
-                'state' => 1, 
+                'state' => 1,
                 'errors' => [
                     ['code' => 'order-confirmation-model', 'message' => trans('messages.order_confirmation_warning')]
                 ]
@@ -370,7 +370,7 @@ class VendorController extends Controller
 
         if ($order->picked_up != null) {
             return response()->json([
-                'state' => 1, 
+                'state' => 1,
                 'errors' => [
                     ['code' => 'status', 'message' => trans('messages.You_can_not_change_status_after_picked_up_by_delivery_man')]
                 ]
@@ -379,7 +379,7 @@ class VendorController extends Controller
 
         if ($request['status'] == 'delivered' && $order->order_type != 'take_away') {
             return response()->json([
-                'state' => 1, 
+                'state' => 1,
                 'errors' => [
                     ['code' => 'status', 'message' => trans('messages.you_can_not_delivered_delivery_order')]
                 ]
@@ -387,7 +387,7 @@ class VendorController extends Controller
         }
         if (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered' && $order->otp != $request['otp']) {
             return response()->json([
-                'state' => 1, 
+                'state' => 1,
                 'errors' => [
                     ['code' => 'otp', 'message' => 'Not matched']
                 ]
@@ -690,6 +690,59 @@ class VendorController extends Controller
             'errors' => [
                 ['code' => 'amount', 'message' => trans('messages.insufficient_balance')]
             ]
-        ], 403);
+        ], 200);
+    }
+
+
+    public function get_dashboard(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'restaurant_id' => 'required'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+
+        //all
+        $count_orders_all = Order::where('restaurant_id', $request['restaurant_id'])
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->count();
+
+        $sum_orders_all = Order::where('restaurant_id', $request['restaurant_id'])
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->sum('order_amount');
+
+        //today
+        $count_orders_today = Order::where('restaurant_id', $request['restaurant_id'])
+            ->whereDate('created_at', date('Y-m-d'))
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->count();
+
+        $sum_orders_today = Order::where('restaurant_id', $request['restaurant_id'])
+            ->whereDate('created_at', date('Y-m-d'))
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->sum('order_amount');
+
+        $cancelled_orders = Order::where('restaurant_id', $request['restaurant_id'])
+            ->where('order_status', 'cancelled')
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->count();
+
+        // print_r($count_orders_all);die;
+
+        // $details = Helpers::order_details_data_formatting($details);
+        $rData = array(
+            'total_earnings' => $sum_orders_all,
+            'total_orders' => $count_orders_all,
+            'todays_total_orders' => $count_orders_today,
+            'todays_total_earnings' => $sum_orders_today,
+            'cancelled_orders' => $cancelled_orders
+        );
+        return response()->json(['state' => 0, 'respData' => $rData], 200);
     }
 }

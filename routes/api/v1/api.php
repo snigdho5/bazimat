@@ -89,6 +89,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::get('get-products-list', 'VendorController@get_products');
         Route::put('update-bank-info', 'VendorController@update_bank_info');
         Route::post('request-withdraw', 'VendorController@request_withdraw');
+        Route::post('dashboard', 'VendorController@get_dashboard');
 
         // Business setup
         Route::put('update-business-setup', 'BusinessSettingsController@update_restaurant_setup');
