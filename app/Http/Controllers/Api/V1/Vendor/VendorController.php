@@ -714,7 +714,7 @@ class VendorController extends Controller
             ->orderBy('schedule_at', 'desc')
             ->sum('order_amount');
 
-        $cancelled_orders = Order::where('restaurant_id', $request['restaurant_id'])
+        $cancelled_orders_all = Order::where('restaurant_id', $request['restaurant_id'])
             ->where('order_status', 'cancelled')
             ->Notpos()
             ->orderBy('schedule_at', 'desc')
@@ -734,15 +734,23 @@ class VendorController extends Controller
             ->sum('order_amount');
 
 
+        $cancelled_orders_today = Order::where('restaurant_id', $request['restaurant_id'])
+            ->whereDate('created_at', date('Y-m-d'))
+            ->where('order_status', 'cancelled')
+            ->Notpos()
+            ->orderBy('schedule_at', 'desc')
+            ->count();
+
         // print_r($count_orders_all);die;
 
         // $details = Helpers::order_details_data_formatting($details);
         $rData = array(
-            'total_earnings' => $sum_orders_all,
-            'total_orders' => $count_orders_all,
-            'todays_total_orders' => $count_orders_today,
-            'todays_total_earnings' => $sum_orders_today,
-            'cancelled_orders' => $cancelled_orders
+            'total_earnings' => (string)$sum_orders_all,
+            'total_orders' => (string)$count_orders_all,
+            'total_cancelled_orders' => (string)$cancelled_orders_all,
+            'todays_total_orders' => (string)$count_orders_today,
+            'todays_total_earnings' => (string)$sum_orders_today,
+            'todays_cancelled_orders' => (string)$cancelled_orders_today
         );
         return response()->json(['state' => 0, 'respData' => $rData], 200);
     }
