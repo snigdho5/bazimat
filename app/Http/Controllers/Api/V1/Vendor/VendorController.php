@@ -140,6 +140,7 @@ class VendorController extends Controller
         $orders = Order::where('restaurant_id', $request['restaurant_id'])
             // ->where('order_status', 'pending')
             ->whereIn('order_status', ['pending', 'accepted', 'confirmed', 'rejected', 'processing'])
+            ->whereDate('created_at', date('Y-m-d'))
             ->Notpos()
             ->orderBy('schedule_at', 'desc')
             ->get();
@@ -699,6 +700,7 @@ class VendorController extends Controller
         $validator = Validator::make($request->all(), [
             'restaurant_id' => 'required'
         ]);
+
         if ($validator->fails()) {
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
@@ -715,7 +717,8 @@ class VendorController extends Controller
             ->sum('order_amount');
 
         $cancelled_orders_all = Order::where('restaurant_id', $request['restaurant_id'])
-            ->where('order_status', 'cancelled')
+            // ->where('order_status', 'canceled')
+            ->whereIn('order_status', ['canceled', 'rejected'])
             ->Notpos()
             ->orderBy('schedule_at', 'desc')
             ->count();
@@ -736,7 +739,8 @@ class VendorController extends Controller
 
         $cancelled_orders_today = Order::where('restaurant_id', $request['restaurant_id'])
             ->whereDate('created_at', date('Y-m-d'))
-            ->where('order_status', 'cancelled')
+            // ->where('order_status', 'canceled')
+            ->whereIn('order_status', ['canceled', 'rejected'])
             ->Notpos()
             ->orderBy('schedule_at', 'desc')
             ->count();
