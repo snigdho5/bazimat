@@ -538,6 +538,7 @@ class OrderController extends Controller
                 $data['canceled'] = ($data['canceled'] != '') ? $data['canceled'] : '';
                 $data['refunded'] = ($data['refunded'] != '') ? $data['refunded'] : '';
 
+
                 $cartDetails = DB::table('cart')
                     ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
                     ->join('food', 'food.id', '=', 'cart.food_id')
@@ -560,6 +561,7 @@ class OrderController extends Controller
                 // } else {
                 $data['food_name'] = '';
                 // }
+
 
                 return $data;
             });

@@ -31,34 +31,40 @@ class DeliverymanController extends Controller
 
     public function get_profile(Request $request)
     {
-        $dm = DeliveryMan::with(['rating'])->where(['auth_token' => $request['token']])->first();
-        $dm['avg_rating'] = (double)(!empty($dm->rating[0])?$dm->rating[0]->average:0);
-        $dm['rating_count'] = (double)(!empty($dm->rating[0])?$dm->rating[0]->rating_count:0);
-        $dm['order_count'] =(integer)$dm->orders->count();
-        $dm['todays_order_count'] =(integer)$dm->todaysorders->count();
-        $dm['this_week_order_count'] =(integer)$dm->this_week_orders->count();
-        $dm['member_since_days'] =(integer)$dm->created_at->diffInDays();
-        $dm['cash_in_hands'] =$dm->wallet?$dm->wallet->collected_cash:0;
-        $dm['balance'] =$dm->wallet?$dm->wallet->total_earning - $dm->wallet->total_withdrawn:0;
-        $dm['todays_earning'] =(float)$dm->todays_earning()->sum('original_delivery_charge');
-        $dm['this_week_earning'] =(float)$dm->this_week_earning()->sum('original_delivery_charge');
-        $dm['this_month_earning'] =(float)$dm->this_month_earning()->sum('original_delivery_charge');
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+        $dm = DeliveryMan::with(['rating'])->where(['phone' => $request['phone']])->first();
+        $dm['avg_rating'] = (float)(!empty($dm->rating[0]) ? $dm->rating[0]->average : 0);
+        $dm['rating_count'] = (float)(!empty($dm->rating[0]) ? $dm->rating[0]->rating_count : 0);
+        $dm['order_count'] = (int)$dm->orders->count();
+        $dm['todays_order_count'] = (int)$dm->todaysorders->count();
+        $dm['this_week_order_count'] = (int)$dm->this_week_orders->count();
+        $dm['member_since_days'] = (int)$dm->created_at->diffInDays();
+        $dm['cash_in_hands'] = $dm->wallet ? $dm->wallet->collected_cash : 0;
+        $dm['balance'] = $dm->wallet ? $dm->wallet->total_earning - $dm->wallet->total_withdrawn : 0;
+        $dm['todays_earning'] = (float)$dm->todays_earning()->sum('original_delivery_charge');
+        $dm['this_week_earning'] = (float)$dm->this_week_earning()->sum('original_delivery_charge');
+        $dm['this_month_earning'] = (float)$dm->this_month_earning()->sum('original_delivery_charge');
         unset($dm['orders']);
         unset($dm['rating']);
         unset($dm['todaysorders']);
         unset($dm['this_week_orders']);
         unset($dm['wallet']);
-        return response()->json($dm, 200);
+        return response()->json(['state' => 0, 'respData' => $dm], 200);
     }
-    
+
     public function update_profile(Request $request)
     {
         $dm = DeliveryMan::with(['rating'])->where(['auth_token' => $request['token']])->first();
         $validator = Validator::make($request->all(), [
             'f_name' => 'required',
             'l_name' => 'required',
-            'email' => 'required|unique:delivery_men,email,'.$dm->id,
-            'password'=>'nullable|min:6',
+            'email' => 'required|unique:delivery_men,email,' . $dm->id,
+            'password' => 'nullable|min:6',
         ], [
             'f_name.required' => 'First name is required!',
             'l_name.required' => 'Last name is required!',
@@ -95,7 +101,7 @@ class DeliverymanController extends Controller
     public function activeStatus(Request $request)
     {
         $dm = DeliveryMan::with(['rating'])->where(['auth_token' => $request['token']])->first();
-        $dm->active = $dm->active?0:1;
+        $dm->active = $dm->active ? 0 : 1;
         $dm->save();
         return response()->json(['message' => trans('messages.active_status_updated')], 200);
     }
@@ -104,13 +110,13 @@ class DeliverymanController extends Controller
     {
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
         $orders = Order::with(['customer', 'restaurant'])
-        ->whereIn('order_status', ['accepted','confirmed','pending', 'processing', 'picked_up', 'handover'])
-        ->where(['delivery_man_id' => $dm['id']])
-        ->orderBy('accepted')
-        ->orderBy('schedule_at', 'desc')
-        ->Notpos()
-        ->get();
-        $orders= Helpers::order_data_formatting($orders, true);
+            ->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover'])
+            ->where(['delivery_man_id' => $dm['id']])
+            ->orderBy('accepted')
+            ->orderBy('schedule_at', 'desc')
+            ->Notpos()
+            ->get();
+        $orders = Helpers::order_data_formatting($orders, true);
         return response()->json($orders, 200);
     }
 
@@ -120,33 +126,27 @@ class DeliverymanController extends Controller
 
         $orders = Order::with(['customer', 'restaurant']);
 
-        if($dm->type == 'zone_wise')
-        {
-            $orders = $orders->whereHas('restaurant', function($q)use($dm){
+        if ($dm->type == 'zone_wise') {
+            $orders = $orders->whereHas('restaurant', function ($q) use ($dm) {
                 $q->where('zone_id', $dm->zone_id)->where('self_delivery_system', 0);
             });
-        }
-        else
-        {
+        } else {
             $orders = $orders->where('restaurant_id', $dm->restaurant_id);
         }
-        
-        if(config('order_confirmation_model') == 'deliveryman')
-        {
-            $orders = $orders->whereIn('order_status', ['pending', 'confirmed','processing','handover']);
+
+        if (config('order_confirmation_model') == 'deliveryman') {
+            $orders = $orders->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover']);
+        } else {
+            $orders = $orders->whereIn('order_status', ['confirmed', 'processing', 'handover']);
         }
-        else
-        {
-            $orders = $orders->whereIn('order_status', ['confirmed','processing','handover']);
-        }
-        
+
         $orders = $orders->delivery()
-        ->OrderScheduledIn(30)
-        ->whereNull('delivery_man_id')
-        ->orderBy('schedule_at', 'desc')
-        ->Notpos()
-        ->get();
-        $orders= Helpers::order_data_formatting($orders, true);
+            ->OrderScheduledIn(30)
+            ->whereNull('delivery_man_id')
+            ->orderBy('schedule_at', 'desc')
+            ->Notpos()
+            ->get();
+        $orders = Helpers::order_data_formatting($orders, true);
         return response()->json($orders, 200);
     }
 
@@ -158,72 +158,66 @@ class DeliverymanController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
-        $dm=DeliveryMan::where(['auth_token' => $request['token']])->first();
+        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
         $order = Order::where('id', $request['order_id'])
-        // ->whereIn('order_status', ['pending', 'confirmed'])
-        ->whereNull('delivery_man_id')
-        ->Notpos()
-        ->first();
-        if(!$order)
-        {
+            // ->whereIn('order_status', ['pending', 'confirmed'])
+            ->whereNull('delivery_man_id')
+            ->Notpos()
+            ->first();
+        if (!$order) {
             return response()->json([
                 'errors' => [
                     ['code' => 'order', 'message' => trans('messages.can_not_accept')]
                 ]
             ], 404);
         }
-        if($dm->current_orders >= config('dm_maximum_orders'))
-        {
+        if ($dm->current_orders >= config('dm_maximum_orders')) {
             return response()->json([
-                'errors'=>[
-                    ['code' => 'dm_maximum_order_exceed', 'message'=> trans('messages.dm_maximum_order_exceed_warning')]
+                'errors' => [
+                    ['code' => 'dm_maximum_order_exceed', 'message' => trans('messages.dm_maximum_order_exceed_warning')]
                 ]
             ], 405);
         }
-        $order->order_status = in_array($order->order_status, ['pending', 'confirmed'])?'accepted':$order->order_status;
+        $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted' : $order->order_status;
         $order->delivery_man_id = $dm->id;
         $order->accepted = now();
         $order->save();
 
-        $dm->current_orders = $dm->current_orders+1;
+        $dm->current_orders = $dm->current_orders + 1;
         $dm->save();
 
-        $fcm_token=$order->customer->cm_firebase_token;
+        $fcm_token = $order->customer->cm_firebase_token;
 
         $value = Helpers::order_status_update_message('accepted');
         try {
-            if($value)
-            {
+            if ($value) {
                 $data = [
-                    'title' =>trans('messages.order_push_title'),
+                    'title' => trans('messages.order_push_title'),
                     'description' => $value,
                     'order_id' => $order['id'],
                     'image' => '',
-                    'type'=> 'order_status'
+                    'type' => 'order_status'
                 ];
                 Helpers::send_push_notif_to_device($fcm_token, $data);
             }
-
         } catch (\Exception $e) {
-
         }
 
         return response()->json(['message' => 'Order accepted successfully'], 200);
-
     }
-    
+
     public function record_location_data(Request $request)
     {
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
-        $order = Order::whereIn('order_status', ['accepted','confirmed','pending', 'processing', 'picked_up'])
-        ->when($request['order_id'], function($q)use($request){
-            return $q->where('id', $request['order_id']);
-        })
-        ->where('delivery_man_id', $dm['id'])
-        ->Notpos()
-        ->first();
+        $order = Order::whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up'])
+            ->when($request['order_id'], function ($q) use ($request) {
+                return $q->where('id', $request['order_id']);
+            })
+            ->where('delivery_man_id', $dm['id'])
+            ->Notpos()
+            ->first();
         DB::table('delivery_histories')->insert([
-            'order_id' => $order?$order->id:null,
+            'order_id' => $order ? $order->id : null,
             'delivery_man_id' => $dm['id'],
             'longitude' => $request['longitude'],
             'latitude' => $request['latitude'],
@@ -257,27 +251,25 @@ class DeliverymanController extends Controller
         ]);
 
         $validator->sometimes('otp', 'required', function ($request) {
-            return (Config::get('order_delivery_verification')==1 && $request['status']=='delivered');
+            return (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered');
         });
 
         if ($validator->fails()) {
             return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
-        
+
         $order = Order::where(['id' => $request['order_id'], 'delivery_man_id' => $dm['id']])->Notpos()->first();
-        
-        if($request['status'] =="confirmed" && config('order_confirmation_model') == 'restaurant')
-        {
+
+        if ($request['status'] == "confirmed" && config('order_confirmation_model') == 'restaurant') {
             return response()->json([
                 'errors' => [
                     ['code' => 'order-confirmation-model', 'message' => trans('messages.order_confirmation_warning')]
                 ]
             ], 403);
         }
-        
-        if($order->order_status !="pending" && $request['status'] == 'canceled')
-        {
+
+        if ($order->order_status != "pending" && $request['status'] == 'canceled') {
             return response()->json([
                 'errors' => [
                     ['code' => 'delivery-man', 'message' => trans('messages.order_can_not_cancle_after_confirm')]
@@ -285,26 +277,20 @@ class DeliverymanController extends Controller
             ], 401);
         }
 
-        if(Config::get('order_delivery_verification')==1 && $request['status']=='delivered' && $order->otp != $request['otp'])
-        {
+        if (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered' && $order->otp != $request['otp']) {
             return response()->json([
                 'errors' => [
                     ['code' => 'otp', 'message' => 'Not matched']
                 ]
             ], 406);
         }
-        if ($request->status == 'delivered') 
-        {
-            if($order->transaction == null)
-            {
-                $reveived_by = $order->payment_method == 'cash_on_delivery'?'deliveryman':'admin';
+        if ($request->status == 'delivered') {
+            if ($order->transaction == null) {
+                $reveived_by = $order->payment_method == 'cash_on_delivery' ? 'deliveryman' : 'admin';
 
-                if(OrderLogic::create_transaction($order,$reveived_by, null))
-                {
+                if (OrderLogic::create_transaction($order, $reveived_by, null)) {
                     $order->payment_status = 'paid';
-                }
-                else
-                {
+                } else {
                     return response()->json([
                         'errors' => [
                             ['code' => 'error', 'message' => trans('messages.faield_to_create_order_transaction')]
@@ -312,32 +298,28 @@ class DeliverymanController extends Controller
                     ], 406);
                 }
             }
-            if($order->transaction)
-            {
-                $order->transaction->update(['delivery_man_id'=>$dm->id]);
+            if ($order->transaction) {
+                $order->transaction->update(['delivery_man_id' => $dm->id]);
             }
 
-            $order->details->each(function($item, $key){
-                if($item->food)
-                {
+            $order->details->each(function ($item, $key) {
+                if ($item->food) {
                     $item->food->increment('order_count');
                 }
             });
             $order->customer->increment('order_count');
-            if($dm->earning == 1)
-            {
+            if ($dm->earning == 1) {
                 $dmWallet = DeliveryManWallet::firstOrNew(
                     ['delivery_man_id' => $dm->id]
                 );
                 $dmWallet->total_earning = $dmWallet->total_earning + $order->original_delivery_charge;
                 $dmWallet->save();
             }
-            
-            $dm->current_orders = $dm->current_orders>1?$dm->current_orders-1:0;
-            $dm->save();
 
+            $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
+            $dm->save();
         }
-        
+
 
         $order->order_status = $request['status'];
         $order[$request['status']] = now();
@@ -359,8 +341,7 @@ class DeliverymanController extends Controller
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
         $order = Order::with(['details'])->where(['delivery_man_id' => $dm['id'], 'id' => $request['order_id']])->Notpos()->first();
-        if(!$order)
-        {
+        if (!$order) {
             return response()->json([
                 'errors' => [
                     ['code' => 'order', 'message' => trans('messages.not_found')]
@@ -376,11 +357,11 @@ class DeliverymanController extends Controller
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
         $orders = Order::with(['customer', 'restaurant'])
-        ->where(['delivery_man_id' => $dm['id']])
-        ->orderBy('schedule_at', 'desc')
-        ->Notpos()
-        ->get();
-        $orders= Helpers::order_data_formatting($orders, true);
+            ->where(['delivery_man_id' => $dm['id']])
+            ->orderBy('schedule_at', 'desc')
+            ->Notpos()
+            ->get();
+        $orders = Helpers::order_data_formatting($orders, true);
         return response()->json($orders, 200);
     }
 
@@ -390,11 +371,17 @@ class DeliverymanController extends Controller
             'order_id' => 'required'
         ]);
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
 
         $last_data = DeliveryHistory::where(['order_id' => $request['order_id']])->latest()->first();
-        return response()->json($last_data, 200);
+
+        if ($last_data != '') {
+            return response()->json(['state' => 0, 'respData' =>  $last_data], 200);
+        } else {
+            return response()->json(['state' => 0, 'respData' =>
+            []], 200);
+        }
     }
 
     public function order_payment_status_update(Request $request)
@@ -436,19 +423,20 @@ class DeliverymanController extends Controller
             'fcm_token' => $request['fcm_token']
         ]);
 
-        return response()->json(['message'=>'successfully updated!'], 200);
+        return response()->json(['message' => 'successfully updated!'], 200);
     }
 
-    public function get_notifications(Request $request){
+    public function get_notifications(Request $request)
+    {
 
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
-        $notifications = Notification::active()->where(function($q) use($dm){
-                $q->whereNull('zone_id')->orWhere('zone_id', $dm->zone_id);
-            })->where('tergat', 'deliveryman')->where('created_at', '>=', \Carbon\Carbon::today()->subDays(7))->get();
+        $notifications = Notification::active()->where(function ($q) use ($dm) {
+            $q->whereNull('zone_id')->orWhere('zone_id', $dm->zone_id);
+        })->where('tergat', 'deliveryman')->where('created_at', '>=', \Carbon\Carbon::today()->subDays(7))->get();
 
         $user_notifications = UserNotification::where('delivery_man_id', $dm->id)->where('created_at', '>=', \Carbon\Carbon::today()->subDays(7))->get();
-        
+
         $notifications->append('data');
 
         $notifications =  $notifications->merge($user_notifications);
@@ -458,5 +446,4 @@ class DeliverymanController extends Controller
             return response()->json([], 200);
         }
     }
-
 }
