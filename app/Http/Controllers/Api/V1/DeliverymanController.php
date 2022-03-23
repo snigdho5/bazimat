@@ -108,21 +108,36 @@ class DeliverymanController extends Controller
 
     public function get_current_orders(Request $request)
     {
-        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+
+        $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
         $orders = Order::with(['customer', 'restaurant'])
-            ->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover'])
+            ->whereIn('order_status', ['picked_up', 'handover'])
+            // ->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover'])
             ->where(['delivery_man_id' => $dm['id']])
             ->orderBy('accepted')
             ->orderBy('schedule_at', 'desc')
             ->Notpos()
             ->get();
         $orders = Helpers::order_data_formatting($orders, true);
-        return response()->json($orders, 200);
+        return response()->json(['state' => 0, 'respData' => $orders], 200);
     }
 
     public function get_latest_orders(Request $request)
     {
-        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+
+        $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
 
         $orders = Order::with(['customer', 'restaurant']);
 
@@ -147,18 +162,19 @@ class DeliverymanController extends Controller
             ->Notpos()
             ->get();
         $orders = Helpers::order_data_formatting($orders, true);
-        return response()->json($orders, 200);
+        return response()->json(['state' => 0, 'respData' => $orders], 200);
     }
 
     public function accept_order(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|exists:orders,id',
+            'user_id' => 'required',
         ]);
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
+        $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
         $order = Order::where('id', $request['order_id'])
             // ->whereIn('order_status', ['pending', 'confirmed'])
             ->whereNull('delivery_man_id')
@@ -166,17 +182,19 @@ class DeliverymanController extends Controller
             ->first();
         if (!$order) {
             return response()->json([
+                'state' => 1, 
                 'errors' => [
                     ['code' => 'order', 'message' => trans('messages.can_not_accept')]
                 ]
-            ], 404);
+            ], 200);
         }
         if ($dm->current_orders >= config('dm_maximum_orders')) {
             return response()->json([
+                'state' => 1, 
                 'errors' => [
                     ['code' => 'dm_maximum_order_exceed', 'message' => trans('messages.dm_maximum_order_exceed_warning')]
                 ]
-            ], 405);
+            ], 200);
         }
         $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted' : $order->order_status;
         $order->delivery_man_id = $dm->id;
@@ -203,12 +221,23 @@ class DeliverymanController extends Controller
         } catch (\Exception $e) {
         }
 
-        return response()->json(['message' => 'Order accepted successfully'], 200);
+        return response()->json(['state' => 0, 'message' => 'Order accepted successfully'], 200);
     }
 
     public function record_location_data(Request $request)
     {
-        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
+        $validator = Validator::make($request->all(), [
+            'order_id' => 'required|exists:orders,id',
+            'user_id' => 'required',
+            'longitude' => 'required',
+            'latitude' => 'required',
+            'location' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+
+        $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
         $order = Order::whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up'])
             ->when($request['order_id'], function ($q) use ($request) {
                 return $q->where('id', $request['order_id']);
@@ -226,7 +255,7 @@ class DeliverymanController extends Controller
             'created_at' => now(),
             'updated_at' => now()
         ]);
-        return response()->json(['message' => 'location recorded'], 200);
+        return response()->json(['state' => 0, 'message' => 'location recorded'], 200);
     }
 
     public function get_order_history(Request $request)
@@ -412,18 +441,19 @@ class DeliverymanController extends Controller
     public function update_fcm_token(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'fcm_token' => 'required'
+            'fcm_token' => 'required',
+            'user_id' => 'required',
         ]);
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
+        $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
 
         DeliveryMan::where(['id' => $dm['id']])->update([
             'fcm_token' => $request['fcm_token']
         ]);
 
-        return response()->json(['message' => 'successfully updated!'], 200);
+        return response()->json(['state' => 0, 'message' => 'successfully updated!'], 200);
     }
 
     public function get_notifications(Request $request)

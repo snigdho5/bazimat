@@ -29,6 +29,8 @@ Route::group(['namespace' => 'Api\V1'], function () {
 
         Route::group(['prefix' => 'delivery-man'], function () {
             Route::post('login', 'DeliveryManLoginController@login');
+            Route::post('otp_login', 'DeliveryManLoginController@otp_login');
+            Route::post('verify_otp', 'DeliveryManLoginController@verify_otp');
 
             Route::post('forgot-password', 'DMPasswordResetController@reset_password_request');
             Route::post('verify-token', 'DMPasswordResetController@verify_token');
@@ -44,8 +46,13 @@ Route::group(['namespace' => 'Api\V1'], function () {
 
 
     Route::group(['prefix' => 'delivery-man'], function () {
+        
         Route::get('last-location', 'DeliverymanController@get_last_location');
-
+        Route::get('profile', 'DeliverymanController@get_profile');
+        Route::put('update-fcm-token', 'DeliverymanController@update_fcm_token');
+        Route::get('current-orders', 'DeliverymanController@get_current_orders');
+        Route::get('latest-orders', 'DeliverymanController@get_latest_orders');
+        Route::put('accept-order', 'DeliverymanController@accept_order');
 
         Route::group(['prefix' => 'reviews', 'middleware' => ['auth:api']], function () {
             Route::get('/{delivery_man_id}', 'DeliveryManReviewController@get_reviews');
@@ -53,20 +60,15 @@ Route::group(['namespace' => 'Api\V1'], function () {
             Route::post('/submit', 'DeliveryManReviewController@submit_review');
         });
         Route::group(['middleware' => ['dm.api']], function () {
-            Route::get('profile', 'DeliverymanController@get_profile');
             Route::get('notifications', 'DeliverymanController@get_notifications');
             Route::put('update-profile', 'DeliverymanController@update_profile');
             Route::post('update-active-status', 'DeliverymanController@activeStatus');
-            Route::get('current-orders', 'DeliverymanController@get_current_orders');
-            Route::get('latest-orders', 'DeliverymanController@get_latest_orders');
             Route::post('record-location-data', 'DeliverymanController@record_location_data');
             Route::get('all-orders', 'DeliverymanController@get_all_orders');
             Route::get('order-delivery-history', 'DeliverymanController@get_order_history');
-            Route::put('accept-order', 'DeliverymanController@accept_order');
             Route::put('update-order-status', 'DeliverymanController@update_order_status');
             Route::put('update-payment-status', 'DeliverymanController@order_payment_status_update');
             Route::get('order-details', 'DeliverymanController@get_order_details');
-            Route::put('update-fcm-token', 'DeliverymanController@update_fcm_token');
         });
     });
 
