@@ -100,10 +100,21 @@ class DeliverymanController extends Controller
 
     public function activeStatus(Request $request)
     {
-        $dm = DeliveryMan::with(['rating'])->where(['auth_token' => $request['token']])->first();
+
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required',
+            // 'status' => 'required|numeric|in:0,1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
+        }
+
+        $dm = DeliveryMan::with(['rating'])->where(['id' => $request['user_id']])->first();
         $dm->active = $dm->active ? 0 : 1;
+        // $dm->active = $request['status'];
         $dm->save();
-        return response()->json(['message' => trans('messages.active_status_updated')], 200);
+        return response()->json(['state' => 0, 'active_status' => $dm->active, 'message' => trans('messages.active_status_updated')], 200);
     }
 
     public function get_current_orders(Request $request)
@@ -124,7 +135,70 @@ class DeliverymanController extends Controller
             ->orderBy('schedule_at', 'desc')
             ->Notpos()
             ->get();
-        $orders = Helpers::order_data_formatting($orders, true);
+        // $orders = Helpers::order_data_formatting($orders, true);
+
+        if (isset($orders[0]->id)) {
+            foreach ($orders as $key => $value) {
+
+                $cartDetails = DB::table('cart')
+                    ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                    ->join('food', 'food.id', '=', 'cart.food_id')
+                    ->where('cart.order_id', $value->id)
+                    ->where('cart.is_odered', 1)
+                    ->get();
+
+
+                $orders_f[] = array(
+                    'id' => $value->id,
+                    'user_id' => $value->user_id,
+                    'food_id' => $value->food_id,
+                    'quantity' => $value->quantity,
+                    'order_amount' => $value->order_amount,
+                    'coupon_discount_amount' => $value->coupon_discount_amount,
+                    'coupon_discount_title' => $value->coupon_discount_title,
+                    'payment_status' => $value->payment_status,
+                    'order_status' => $value->order_status,
+                    'total_tax_amount' => $value->total_tax_amount,
+                    'payment_method' => $value->payment_method,
+                    'transaction_reference' => ($value->transaction_reference != '') ? $value->transaction_reference : '',
+                    'delivery_man_id' => ($value->delivery_man_id != '') ? (string)$value->delivery_man_id : '',
+                    'coupon_code' => ($value->coupon_code != '') ? $value->coupon_code : '',
+                    'order_note' => ($value->order_note != '') ? $value->order_note : '',
+                    'order_type' => ($value->order_type != '') ? $value->order_type : '',
+                    'checked' => $value->checked,
+                    'restaurant_id' => $value->restaurant_id,
+                    'created_at' => $value->created_at,
+                    'updated_at' => $value->updated_at,
+                    'delivery_charge' => $value->delivery_charge,
+                    'schedule_at' => $value->schedule_at,
+                    'callback' => ($value->callback != '') ? $value->callback : '',
+                    'otp' => $value->otp,
+                    'pending' => ($value->pending != '') ? $value->pending : '',
+                    'accepted' => ($value->accepted != '') ? $value->accepted : '',
+                    'confirmed' => ($value->confirmed != '') ? $value->confirmed : '',
+                    'processing' => ($value->processing != '') ? $value->processing : '',
+                    'handover' => ($value->handover != '') ? $value->handover : '',
+                    'picked_up' => ($value->picked_up != '') ? $value->picked_up : '',
+                    'delivered' => ($value->delivered != '') ? $value->delivered : '',
+                    'canceled' => ($value->canceled != '') ? $value->canceled : '',
+                    'refund_requested' => ($value->refund_requested != '') ? $value->refund_requested : '',
+                    'refunded' => ($value->refunded != '') ? $value->refunded : '',
+                    'transaction_id' => $value->transaction_id,
+                    'delivery_address' => $value->delivery_address,
+                    'scheduled' => $value->scheduled,
+                    'restaurant_discount_amount' => $value->restaurant_discount_amount,
+                    'original_delivery_charge' => $value->original_delivery_charge,
+                    'failed' => ($value->failed != '') ? $value->failed : '',
+                    'adjusment' => $value->adjusment,
+                    'edited' => $value->edited,
+                    'cart_details' => $cartDetails,
+                    'delivery_boy_details' => $dm
+                );
+            }
+            return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
+        } else {
+            return response()->json(['state' => 0, 'message' => 'not found', 'respData' => []], 200);
+        }
         return response()->json(['state' => 0, 'respData' => $orders], 200);
     }
 
@@ -155,14 +229,78 @@ class DeliverymanController extends Controller
             $orders = $orders->whereIn('order_status', ['confirmed', 'processing', 'handover']);
         }
 
+        // $orders = $orders->where(['delivery_man_id' => $dm['id']]);
+
         $orders = $orders->delivery()
             ->OrderScheduledIn(30)
             ->whereNull('delivery_man_id')
             ->orderBy('schedule_at', 'desc')
             ->Notpos()
             ->get();
-        $orders = Helpers::order_data_formatting($orders, true);
-        return response()->json(['state' => 0, 'respData' => $orders], 200);
+            
+        // $orders = Helpers::order_data_formatting($orders, true);
+        if (isset($orders[0]->id)) {
+            foreach ($orders as $key => $value) {
+
+                $cartDetails = DB::table('cart')
+                    ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+                    ->join('food', 'food.id', '=', 'cart.food_id')
+                    ->where('cart.order_id', $value->id)
+                    ->where('cart.is_odered', 1)
+                    ->get();
+
+
+                $orders_f[] = array(
+                    'id' => $value->id,
+                    'user_id' => $value->user_id,
+                    'food_id' => $value->food_id,
+                    'quantity' => $value->quantity,
+                    'order_amount' => $value->order_amount,
+                    'coupon_discount_amount' => $value->coupon_discount_amount,
+                    'coupon_discount_title' => $value->coupon_discount_title,
+                    'payment_status' => $value->payment_status,
+                    'order_status' => $value->order_status,
+                    'total_tax_amount' => $value->total_tax_amount,
+                    'payment_method' => $value->payment_method,
+                    'transaction_reference' => ($value->transaction_reference != '') ? $value->transaction_reference : '',
+                    'delivery_man_id' => ($value->delivery_man_id != '') ? (string)$value->delivery_man_id : '',
+                    'coupon_code' => ($value->coupon_code != '') ? $value->coupon_code : '',
+                    'order_note' => ($value->order_note != '') ? $value->order_note : '',
+                    'order_type' => ($value->order_type != '') ? $value->order_type : '',
+                    'checked' => $value->checked,
+                    'restaurant_id' => $value->restaurant_id,
+                    'created_at' => $value->created_at,
+                    'updated_at' => $value->updated_at,
+                    'delivery_charge' => $value->delivery_charge,
+                    'schedule_at' => $value->schedule_at,
+                    'callback' => ($value->callback != '') ? $value->callback : '',
+                    'otp' => $value->otp,
+                    'pending' => ($value->pending != '') ? $value->pending : '',
+                    'accepted' => ($value->accepted != '') ? $value->accepted : '',
+                    'confirmed' => ($value->confirmed != '') ? $value->confirmed : '',
+                    'processing' => ($value->processing != '') ? $value->processing : '',
+                    'handover' => ($value->handover != '') ? $value->handover : '',
+                    'picked_up' => ($value->picked_up != '') ? $value->picked_up : '',
+                    'delivered' => ($value->delivered != '') ? $value->delivered : '',
+                    'canceled' => ($value->canceled != '') ? $value->canceled : '',
+                    'refund_requested' => ($value->refund_requested != '') ? $value->refund_requested : '',
+                    'refunded' => ($value->refunded != '') ? $value->refunded : '',
+                    'transaction_id' => $value->transaction_id,
+                    'delivery_address' => $value->delivery_address,
+                    'scheduled' => $value->scheduled,
+                    'restaurant_discount_amount' => $value->restaurant_discount_amount,
+                    'original_delivery_charge' => $value->original_delivery_charge,
+                    'failed' => ($value->failed != '') ? $value->failed : '',
+                    'adjusment' => $value->adjusment,
+                    'edited' => $value->edited,
+                    'cart_details' => $cartDetails,
+                    'delivery_boy_details' => $dm
+                );
+            }
+            return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
+        } else {
+            return response()->json(['state' => 0, 'message' => 'not found', 'respData' => []], 200);
+        }
     }
 
     public function accept_order(Request $request)
@@ -182,7 +320,7 @@ class DeliverymanController extends Controller
             ->first();
         if (!$order) {
             return response()->json([
-                'state' => 1, 
+                'state' => 1,
                 'errors' => [
                     ['code' => 'order', 'message' => trans('messages.can_not_accept')]
                 ]
@@ -190,13 +328,13 @@ class DeliverymanController extends Controller
         }
         if ($dm->current_orders >= config('dm_maximum_orders')) {
             return response()->json([
-                'state' => 1, 
+                'state' => 1,
                 'errors' => [
                     ['code' => 'dm_maximum_order_exceed', 'message' => trans('messages.dm_maximum_order_exceed_warning')]
                 ]
             ], 200);
         }
-        $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted' : $order->order_status;
+        $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted_by_delivery_agent' : $order->order_status;
         $order->delivery_man_id = $dm->id;
         $order->accepted = now();
         $order->save();
@@ -219,6 +357,8 @@ class DeliverymanController extends Controller
                 Helpers::send_push_notif_to_device($fcm_token, $data);
             }
         } catch (\Exception $e) {
+
+
         }
 
         return response()->json(['state' => 0, 'message' => 'Order accepted successfully'], 200);
