@@ -46,7 +46,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
 
 
     Route::group(['prefix' => 'delivery-man'], function () {
-        
+
         Route::get('last-location', 'DeliverymanController@get_last_location');
         Route::get('profile', 'DeliverymanController@get_profile');
         Route::put('update-fcm-token', 'DeliverymanController@update_fcm_token');
@@ -54,6 +54,10 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::get('latest-orders', 'DeliverymanController@get_latest_orders');
         Route::put('accept-order', 'DeliverymanController@accept_order');
         Route::post('update-active-status', 'DeliverymanController@activeStatus');
+        Route::put('update-order-status', 'DeliverymanController@update_order_status');
+        Route::get('all-orders', 'DeliverymanController@get_all_orders');
+        Route::get('order-details', 'DeliverymanController@get_order_details');
+        Route::post('record-location-data', 'DeliverymanController@record_location_data');
 
         Route::group(['prefix' => 'reviews', 'middleware' => ['auth:api']], function () {
             Route::get('/{delivery_man_id}', 'DeliveryManReviewController@get_reviews');
@@ -63,12 +67,8 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::group(['middleware' => ['dm.api']], function () {
             Route::get('notifications', 'DeliverymanController@get_notifications');
             Route::put('update-profile', 'DeliverymanController@update_profile');
-            Route::post('record-location-data', 'DeliverymanController@record_location_data');
-            Route::get('all-orders', 'DeliverymanController@get_all_orders');
             Route::get('order-delivery-history', 'DeliverymanController@get_order_history');
-            Route::put('update-order-status', 'DeliverymanController@update_order_status');
             Route::put('update-payment-status', 'DeliverymanController@order_payment_status_update');
-            Route::get('order-details', 'DeliverymanController@get_order_details');
         });
     });
 
