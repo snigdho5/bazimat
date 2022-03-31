@@ -111,6 +111,7 @@ class DeliveryManLoginController extends Controller
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
         $user = DeliveryMan::where('phone', $request->phone)->first();
+        $user->image = url('storage/app/public/delivery-man/' . $user->image);
         if (!isset($user)) {
             $errors = [];
             array_push($errors, ['code' => 'not-found', 'message' => 'Phone number not found!']);

@@ -491,18 +491,18 @@ class VendorController extends Controller
     public function update_fcm_token(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'fcm_token' => 'required'
+            'fcm_token' => 'required',
+            'user_id' => 'required',
         ]);
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        $vendor = $request['vendor'];
 
-        Vendor::where(['id' => $vendor['id']])->update([
+        Vendor::where(['id' => $request['user_id']])->update([
             'firebase_token' => $request['fcm_token']
         ]);
 
-        return response()->json(['message' => 'successfully updated!'], 200);
+        return response()->json(['state' => 0, 'message' => 'successfully updated!'], 200);
     }
 
     public function get_notifications(Request $request)

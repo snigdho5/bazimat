@@ -49,6 +49,7 @@ class DeliverymanController extends Controller
         $dm['todays_earning'] = (float)$dm->todays_earning()->sum('original_delivery_charge');
         $dm['this_week_earning'] = (float)$dm->this_week_earning()->sum('original_delivery_charge');
         $dm['this_month_earning'] = (float)$dm->this_month_earning()->sum('original_delivery_charge');
+        $dm['image'] = url('storage/app/public/delivery-man/' . $dm->image);
         unset($dm['orders']);
         unset($dm['rating']);
         unset($dm['todaysorders']);
@@ -128,7 +129,7 @@ class DeliverymanController extends Controller
 
         $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
         $orders = Order::with(['customer', 'restaurant'])
-            ->whereIn('order_status', ['picked_up', 'handover'])
+            ->whereIn('order_status', ['accepted_by_delivery_agent', 'picked_up', 'handover'])
             // ->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover'])
             ->where(['delivery_man_id' => $dm['id']])
             ->orderBy('accepted')
@@ -232,7 +233,8 @@ class DeliverymanController extends Controller
         // $orders = $orders->where(['delivery_man_id' => $dm['id']]);
 
         $orders = $orders->delivery()
-            ->OrderScheduledIn(30)
+            // ->OrderScheduledIn(30)
+            ->whereDate('created_at', date('Y-m-d'))
             ->whereNull('delivery_man_id')
             ->orderBy('schedule_at', 'desc')
             ->Notpos()
@@ -313,51 +315,57 @@ class DeliverymanController extends Controller
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
         $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
-        $order = Order::where('id', $request['order_id'])
-            // ->whereIn('order_status', ['pending', 'confirmed'])
-            ->whereNull('delivery_man_id')
-            ->Notpos()
-            ->first();
-        if (!$order) {
-            return response()->json([
-                'state' => 1,
-                'errors' => [
-                    ['code' => 'order', 'message' => trans('messages.can_not_accept')]
-                ]
-            ], 200);
-        }
-        if ($dm->current_orders >= config('dm_maximum_orders')) {
-            return response()->json([
-                'state' => 1,
-                'errors' => [
-                    ['code' => 'dm_maximum_order_exceed', 'message' => trans('messages.dm_maximum_order_exceed_warning')]
-                ]
-            ], 200);
-        }
-        $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted_by_delivery_agent' : $order->order_status;
-        $order->delivery_man_id = $dm->id;
-        $order->accepted = now();
-        $order->save();
 
-        $dm->current_orders = $dm->current_orders + 1;
-        $dm->save();
-
-        $fcm_token = $order->customer->cm_firebase_token;
-
-        $value = Helpers::order_status_update_message('accepted');
-        try {
-            if ($value) {
-                $data = [
-                    'title' => trans('messages.order_push_title'),
-                    'description' => $value,
-                    'order_id' => $order['id'],
-                    'image' => '',
-                    'type' => 'order_status'
-                ];
-                Helpers::send_push_notif_to_device($fcm_token, $data);
+        if ($dm->active) {
+            $order = Order::where('id', $request['order_id'])
+                // ->whereIn('order_status', ['pending', 'confirmed'])
+                ->whereNull('delivery_man_id')
+                ->Notpos()
+                ->first();
+            if (!$order) {
+                return response()->json([
+                    'state' => 1,
+                    'errors' => [
+                        ['code' => 'order', 'message' => trans('messages.can_not_accept')]
+                    ]
+                ], 200);
             }
-        } catch (\Exception $e) {
+            // if ($dm->current_orders >= config('dm_maximum_orders')) {
+            //     return response()->json([
+            //         'state' => 1,
+            //         'errors' => [
+            //             ['code' => 'dm_maximum_order_exceed', 'message' => trans('messages.dm_maximum_order_exceed_warning')]
+            //         ]
+            //     ], 200);
+            // }
+            $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted_by_delivery_agent' : $order->order_status;
+            $order->delivery_man_id = $dm->id;
+            $order->accepted = now();
+            $order->save();
+
+            $dm->current_orders = $dm->current_orders + 1;
+            $dm->save();
+
+            $fcm_token = $order->customer->cm_firebase_token;
+
+            $value = Helpers::order_status_update_message('accepted');
+            try {
+                if ($value) {
+                    $data = [
+                        'title' => trans('messages.order_push_title'),
+                        'description' => $value,
+                        'order_id' => $order['id'],
+                        'image' => '',
+                        'type' => 'order_status'
+                    ];
+                    Helpers::send_push_notif_to_device($fcm_token, $data);
+                }
+            } catch (\Exception $e) {
+            }
+        } else {
+            return response()->json(['state' => 1, 'errors' => 'Duty status is inactive cannot accept!'], 200);
         }
+
 
         return response()->json(['state' => 0, 'message' => 'Order accepted successfully'], 200);
     }
@@ -418,9 +426,9 @@ class DeliverymanController extends Controller
             'status' => 'required|in:confirmed,canceled,picked_up,delivered',
         ]);
 
-        $validator->sometimes('otp', 'required', function ($request) {
-            return (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered');
-        });
+        // $validator->sometimes('otp', 'required', function ($request) {
+        //     return (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered');
+        // });
 
         if ($validator->fails()) {
             return response()->json([
@@ -451,14 +459,14 @@ class DeliverymanController extends Controller
                 ], 200);
             }
 
-            if (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered' && $order->otp != $request['otp']) {
-                return response()->json([
-                    'state' => 1,
-                    'errors' => [
-                        ['code' => 'otp', 'message' => 'Not matched']
-                    ]
-                ], 200);
-            }
+            // if (Config::get('order_delivery_verification') == 1 && $request['status'] == 'delivered' && $order->otp != $request['otp']) {
+            //     return response()->json([
+            //         'state' => 1,
+            //         'errors' => [
+            //             ['code' => 'otp', 'message' => 'Not matched']
+            //         ]
+            //     ], 200);
+            // }
             if ($request->status == 'delivered') {
                 if ($order->transaction == null) {
                     $reveived_by = $order->payment_method == 'cash_on_delivery' ? 'deliveryman' : 'admin';
@@ -505,7 +513,7 @@ class DeliverymanController extends Controller
 
             return response()->json(['state' => 0, 'message' => 'Status updated'], 200);
         } else {
-            
+
             return response()->json(['state' => 1, 'message' => 'Order not found!'], 200);
         }
     }
