@@ -61,7 +61,7 @@ class DeliveryManLoginController extends Controller
     public function otp_login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required',
+            'phone' => 'required|max:10',
         ]);
 
         if ($validator->fails()) {

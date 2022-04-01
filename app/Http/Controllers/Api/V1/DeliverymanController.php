@@ -148,7 +148,6 @@ class DeliverymanController extends Controller
                     ->where('cart.is_odered', 1)
                     ->get();
 
-
                 $orders_f[] = array(
                     'id' => $value->id,
                     'user_id' => $value->user_id,
@@ -235,6 +234,7 @@ class DeliverymanController extends Controller
         $orders = $orders->delivery()
             // ->OrderScheduledIn(30)
             ->whereDate('created_at', date('Y-m-d'))
+            ->whereIn('order_status', ['confirmed', 'accepted', 'processing'])
             ->whereNull('delivery_man_id')
             ->orderBy('schedule_at', 'desc')
             ->Notpos()
