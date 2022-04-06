@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Vendor;
 use App\Models\Order;
 use App\Models\RestaurantWallet;
+use App\Models\Restaurant;
 use App\Models\Admin;
 use App\Models\AdminWallet;
 use App\Models\Notification;
@@ -498,9 +499,13 @@ class VendorController extends Controller
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
 
-        Vendor::where(['id' => $request['user_id']])->update([
+        Restaurant::where(['id' => $request['user_id']])->update([
             'firebase_token' => $request['fcm_token']
         ]);
+
+        // Vendor::where(['id' => $request['user_id']])->update([
+        //     'firebase_token' => $request['fcm_token']
+        // ]);
 
         return response()->json(['state' => 0, 'message' => 'successfully updated!'], 200);
     }

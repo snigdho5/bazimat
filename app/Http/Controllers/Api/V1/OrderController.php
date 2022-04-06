@@ -267,6 +267,10 @@ class OrderController extends Controller
         $order->customer->cm_firebase_token = (!empty($user)) ? $user->cm_firebase_token : '';
         $order->order_amount = number_format((float)$request['order_amount'], 2, '.', '');
 
+        
+        $getRestaurant = Restaurant::where('id', $request['restaurant_id'])->first();
+        $order->customer->vendor_firebase_token = (!empty($getRestaurant)) ? $getRestaurant->firebase_token : '';
+
         if ($request['payment_method'] == 'digital_payment') {
             if ($request['transaction_id'] != '') {
                 $order->payment_status = 'paid';

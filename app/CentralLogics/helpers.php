@@ -728,6 +728,7 @@ class Helpers
     public static function send_order_notification($order)
     {
 
+        // print_r($order);die;
         try {
             $status = ($order->order_status == 'delivered' && $order->delivery_man) ? 'delivery_boy_delivered' : $order->order_status;
             $value = self::order_status_update_message($status);
@@ -789,15 +790,20 @@ class Helpers
                     'type' => 'order_status',
                 ];
                 $pushResp = self::send_push_notif_to_device($order->customer->cm_firebase_token, $data2);
-                
-                $pushResp = self::send_push_notif_to_device($order->customer->cm_firebase_token, $data2, 'vendor');
-                // print_r($pushResp);die;
-                DB::table('user_notifications')->insert([
-                    'data' => json_encode($data2),
-                    'user_id' => $order->user_id,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+
+                $pushResp2 = self::send_push_notif_to_device($order->customer->vendor_firebase_token, $data2, 'vendor');
+                // echo 'cust'; print_r($pushResp); echo 'vendor'; print_r($pushResp2);die;
+
+                $pushResp = json_decode($pushResp);
+                $pushResp2 = json_decode($pushResp2);
+                if ($pushResp->success && $pushResp2->success) {
+                    DB::table('user_notifications')->insert([
+                        'data' => json_encode($data2),
+                        'user_id' => $order->user_id,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
             } else if (!$order->scheduled && $order->order_status == 'confirmed' && $order->payment_method != 'cash_on_delivery' && config('order_confirmation_model') == 'deliveryman') {
                 // echo 'ss3';
                 $data = [
