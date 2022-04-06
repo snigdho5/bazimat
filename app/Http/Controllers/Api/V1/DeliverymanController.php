@@ -15,6 +15,7 @@ use App\Models\RestaurantWallet;
 use App\Models\AdminWallet;
 use App\Models\DeliveryManWallet;
 use App\Models\Notification;
+use App\Models\Tracking;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -104,7 +105,7 @@ class DeliverymanController extends Controller
 
         $validator = Validator::make($request->all(), [
             'user_id' => 'required',
-            // 'status' => 'required|numeric|in:0,1',
+            'active_status' => 'required|numeric|in:0,1'
         ]);
 
         if ($validator->fails()) {
@@ -112,8 +113,8 @@ class DeliverymanController extends Controller
         }
 
         $dm = DeliveryMan::with(['rating'])->where(['id' => $request['user_id']])->first();
-        $dm->active = $dm->active ? 0 : 1;
-        // $dm->active = $request['status'];
+        // $dm->active = $dm->active ? 0 : 1;
+        $dm->active = $request['active_status'];
         $dm->save();
         return response()->json(['state' => 0, 'active_status' => $dm->active, 'message' => trans('messages.active_status_updated')], 200);
     }
@@ -129,10 +130,11 @@ class DeliverymanController extends Controller
 
         $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
         $orders = Order::with(['customer', 'restaurant'])
-            ->whereIn('order_status', ['accepted_by_delivery_agent', 'picked_up', 'handover'])
+            ->whereIn('order_status', ['confirmed', 'processing', 'accepted_by_delivery_agent', 'picked_up', 'handover'])
             // ->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover'])
             ->where(['delivery_man_id' => $dm['id']])
-            ->orderBy('accepted')
+            ->whereDate('created_at', date('Y-m-d'))
+            // ->orderBy('accepted')
             ->orderBy('schedule_at', 'desc')
             ->Notpos()
             ->get();
@@ -212,6 +214,10 @@ class DeliverymanController extends Controller
         }
 
         $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
+
+        if(!isset($dm)){
+            return response()->json(['state' => 1, 'errors' => 'User not found!'], 200);
+        }
 
         $orders = Order::with(['customer', 'restaurant']);
 
@@ -309,7 +315,7 @@ class DeliverymanController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|exists:orders,id',
-            'user_id' => 'required',
+            'user_id' => 'required'
         ]);
         if ($validator->fails()) {
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);

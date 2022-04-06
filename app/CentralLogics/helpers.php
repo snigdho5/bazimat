@@ -254,11 +254,11 @@ class Helpers
                 }
             }
         } else {
-            if ($data->food) {
-                $foods[] = self::product_data_formatting($data->food);
+            if ($item->food) {
+                $foods[] = self::product_data_formatting($item->food);
             }
-            if ($data->restaurant) {
-                $restaurants[] = self::restaurant_data_formatting($data->restaurant);
+            if ($item->restaurant) {
+                $restaurants[] = self::restaurant_data_formatting($item->restaurant);
             }
         }
 
@@ -414,9 +414,16 @@ class Helpers
 
         return $currency_symbol_position == 'right' ? $value . ' ' . self::currency_symbol() : self::currency_symbol() . ' ' . $value;
     }
-    public static function send_push_notif_to_device($fcm_token, $data)
+    public static function send_push_notif_to_device($fcm_token, $data, $app_type = 'customer')
     {
-        $key = BusinessSetting::where(['key' => 'push_notification_key'])->first()->value;
+        if ($app_type == 'vendor') {
+            $key = BusinessSetting::where(['key' => 'push_notification_key'])->first()->value;
+        } else if ($app_type == 'delivery') {
+            $key = BusinessSetting::where(['key' => 'push_notification_key_delivery'])->first()->value;
+        } else {
+            $key = BusinessSetting::where(['key' => 'push_notification_key_vendor'])->first()->value;
+        }
+
         $url = "https://fcm.googleapis.com/fcm/send";
         $header = array(
             "authorization: key=" . $key . "",
@@ -782,6 +789,8 @@ class Helpers
                     'type' => 'order_status',
                 ];
                 $pushResp = self::send_push_notif_to_device($order->customer->cm_firebase_token, $data2);
+                
+                $pushResp = self::send_push_notif_to_device($order->customer->cm_firebase_token, $data2, 'vendor');
                 // print_r($pushResp);die;
                 DB::table('user_notifications')->insert([
                     'data' => json_encode($data2),
