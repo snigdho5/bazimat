@@ -417,12 +417,14 @@ class Helpers
     public static function send_push_notif_to_device($fcm_token, $data, $app_type = 'customer')
     {
         if ($app_type == 'vendor') {
-            $key = BusinessSetting::where(['key' => 'push_notification_key'])->first()->value;
+            $key = BusinessSetting::where(['key' => 'push_notification_key_vendor'])->first()->value;
         } else if ($app_type == 'delivery') {
             $key = BusinessSetting::where(['key' => 'push_notification_key_delivery'])->first()->value;
         } else {
-            $key = BusinessSetting::where(['key' => 'push_notification_key_vendor'])->first()->value;
+            $key = BusinessSetting::where(['key' => 'push_notification_key'])->first()->value;
         }
+
+        // echo 'app_type: '.$app_type.' key: ' .$key. ' fcm_token: ' . $fcm_token;die;
 
         $url = "https://fcm.googleapis.com/fcm/send";
         $header = array(
@@ -782,23 +784,31 @@ class Helpers
                     self::send_push_notif_to_topic($data, $order->restaurant->zone->deliveryman_wise_topic, 'new_order');
                 }
 
-                $data2 = [
+                $datacust = [
                     'title' => trans('messages.order_push_title'),
-                    'description' => trans('messages.new_order_push_description'),
+                    'description' => trans('messages.new_order_push_description') . '. We will be updating you all the details.',
                     'order_id' => $order->id,
                     'image' => '',
-                    'type' => 'order_status',
+                    'type' => 'new_order',
                 ];
-                $pushResp = self::send_push_notif_to_device($order->customer->cm_firebase_token, $data2);
+                $pushResp = self::send_push_notif_to_device($order->customer->cm_firebase_token, $datacust);
 
-                $pushResp2 = self::send_push_notif_to_device($order->customer->vendor_firebase_token, $data2, 'vendor');
-                // echo 'cust'; print_r($pushResp); echo 'vendor'; print_r($pushResp2);die;
+                $datavendor = [
+                    'title' => trans('messages.order_push_title'),
+                    'description' => 'New order received. Accept now!!',
+                    'order_id' => $order->id,
+                    'image' => '',
+                    'type' => 'new_order',
+                ];
+
+                $pushResp2 = self::send_push_notif_to_device($order->customer->vendor_firebase_token, $datavendor, 'vendor');
+                // echo 'cust'; print_r($pushResp); echo '<br>vendor'; print_r($pushResp2);die;
 
                 $pushResp = json_decode($pushResp);
                 $pushResp2 = json_decode($pushResp2);
                 if ($pushResp->success && $pushResp2->success) {
                     DB::table('user_notifications')->insert([
-                        'data' => json_encode($data2),
+                        'data' => json_encode($datavendor),
                         'user_id' => $order->user_id,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -815,7 +825,6 @@ class Helpers
                 if ($order->restaurant->self_delivery_system) {
                     self::send_push_notif_to_topic($data, 'restaurant_dm_' . $order->restaurant_id, 'new_order');
                 } else {
-
                     self::send_push_notif_to_topic($data, $order->restaurant->zone->deliveryman_wise_topic, 'new_order');
                 }
             } else if (!$order->scheduled && $order->order_status == 'confirmed' && config('order_confirmation_model') != 'deliveryman') {
@@ -829,13 +838,13 @@ class Helpers
                 if ($order->restaurant->self_delivery_system) {
                     self::send_push_notif_to_topic($data, 'restaurant_dm_' . $order->restaurant_id, 'new_order');
                 } else {
-
                     self::send_push_notif_to_topic($data, $order->restaurant->zone->deliveryman_wise_topic, 'new_order');
                 }
             }
 
             if ($order->order_type == 'delivery' && !$order->scheduled && $order->order_status == 'pending' && $order->payment_method == 'cash_on_delivery' && config('order_confirmation_model') == 'restaurant') {
                 // echo 'ss5';
+
                 $data = [
                     'title' => trans('messages.order_push_title'),
                     'description' => trans('messages.new_order_push_description'),
@@ -843,7 +852,9 @@ class Helpers
                     'image' => '',
                     'type' => 'new_order',
                 ];
+
                 self::send_push_notif_to_device($order->restaurant->vendor->firebase_token, $data);
+
                 DB::table('user_notifications')->insert([
                     'data' => json_encode($data),
                     'vendor_id' => $order->restaurant->vendor_id,

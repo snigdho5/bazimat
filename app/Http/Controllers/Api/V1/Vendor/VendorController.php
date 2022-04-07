@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Config;
+use App\Models\DeliveryMan;
 
 class VendorController extends Controller
 {
@@ -238,6 +239,7 @@ class VendorController extends Controller
                     ->where('cart.is_odered', 1)
                     ->get();
 
+                $dm = DeliveryMan::where(['id' => $value->delivery_man_id])->first();
 
                 $orders_f[] = array(
                     'id' => $value->id,
@@ -283,7 +285,7 @@ class VendorController extends Controller
                     'adjusment' => $value->adjusment,
                     'edited' => $value->edited,
                     'cart_details' => $cartDetails,
-                    'delivery_boy_name' => 'Rajat Sharma'
+                    'delivery_boy_details' => (isset($dm)) ? $dm : []
                 );
             }
             return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
