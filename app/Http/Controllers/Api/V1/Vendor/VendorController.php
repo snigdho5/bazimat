@@ -239,7 +239,13 @@ class VendorController extends Controller
                     ->where('cart.is_odered', 1)
                     ->get();
 
-                $dm = DeliveryMan::where(['id' => $value->delivery_man_id])->first();
+                $dm = DeliveryMan::where(['id' => $value->delivery_man_id])->get();
+
+                if (isset($dm) && isset($dm[0])) {
+                    $dm[0]->image = url('storage/app/public/delivery-man/' . $dm[0]->image);
+                } else {
+                    $dm = [];
+                }
 
                 $orders_f[] = array(
                     'id' => $value->id,
@@ -285,7 +291,7 @@ class VendorController extends Controller
                     'adjusment' => $value->adjusment,
                     'edited' => $value->edited,
                     'cart_details' => $cartDetails,
-                    'delivery_boy_details' => (isset($dm)) ? $dm : []
+                    'delivery_boy_details' => $dm
                 );
             }
             return response()->json(['state' => 0, 'message' => 'found', 'respData' => $orders_f], 200);
