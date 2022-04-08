@@ -383,7 +383,7 @@ class DeliverymanController extends Controller
             'user_id' => 'required',
             'longitude' => 'required',
             'latitude' => 'required',
-            'location' => 'required',
+            // 'location' => 'required',
         ]);
         if ($validator->fails()) {
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
