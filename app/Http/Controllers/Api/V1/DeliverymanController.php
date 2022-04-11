@@ -215,12 +215,12 @@ class DeliverymanController extends Controller
 
         $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
 
-        if(!isset($dm)){
+        if (!isset($dm)) {
             return response()->json(['state' => 1, 'errors' => 'User not found!'], 200);
         }
 
         $orders = Order::with(['customer', 'restaurant']);
-
+        // print_r($orders);die;
         if ($dm->type == 'zone_wise') {
             $orders = $orders->whereHas('restaurant', function ($q) use ($dm) {
                 $q->where('zone_id', $dm->zone_id)->where('self_delivery_system', 0);
@@ -229,23 +229,25 @@ class DeliverymanController extends Controller
             $orders = $orders->where('restaurant_id', $dm->restaurant_id);
         }
 
-        if (config('order_confirmation_model') == 'deliveryman') {
-            $orders = $orders->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover']);
-        } else {
-            $orders = $orders->whereIn('order_status', ['confirmed', 'processing', 'handover']);
-        }
+        // if (config('order_confirmation_model') == 'deliveryman') {
+        //     $orders = $orders->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover']);
+        // } else {
+        //     $orders = $orders->whereIn('order_status', ['confirmed', 'processing', 'handover']);
+        // }
 
         // $orders = $orders->where(['delivery_man_id' => $dm['id']]);
-
-        $orders = $orders->delivery()
+        // print_r($orders);die;
+        $orders = $orders
+            ->delivery()
             // ->OrderScheduledIn(30)
             ->whereDate('created_at', date('Y-m-d'))
             ->whereIn('order_status', ['confirmed', 'accepted', 'processing'])
-            ->whereNull('delivery_man_id')
-            ->orderBy('schedule_at', 'desc')
+            // ->whereNull('delivery_man_id')
+            // ->orderBy('schedule_at', 'desc')
             ->Notpos()
             ->get();
 
+        // print_r($orders);die;
         // $orders = Helpers::order_data_formatting($orders, true);
         if (isset($orders[0]->id)) {
             foreach ($orders as $key => $value) {
@@ -256,7 +258,6 @@ class DeliverymanController extends Controller
                     ->where('cart.order_id', $value->id)
                     ->where('cart.is_odered', 1)
                     ->get();
-
 
                 $orders_f[] = array(
                     'id' => $value->id,
