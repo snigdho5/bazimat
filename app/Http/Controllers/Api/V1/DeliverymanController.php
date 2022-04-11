@@ -345,7 +345,8 @@ class DeliverymanController extends Controller
             //         ]
             //     ], 200);
             // }
-            $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted_by_delivery_agent' : $order->order_status;
+            // $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted_by_delivery_agent' : 
+            $order->order_status = 'accepted_by_delivery_agent';
             $order->delivery_man_id = $dm->id;
             $order->accepted = now();
             $order->save();

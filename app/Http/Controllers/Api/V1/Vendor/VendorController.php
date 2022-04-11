@@ -373,7 +373,10 @@ class VendorController extends Controller
             return response()->json([
                 'state' => 1,
                 'errors' => [
-                    ['code' => 'order-confirmation-model', 'message' => trans('messages.order_confirmation_warning')]
+                    [
+                        'code' => 'order-confirmation-model',
+                        'message' => trans('messages.order_confirmation_warning')
+                    ]
                 ]
             ], 200);
         }
@@ -421,6 +424,18 @@ class VendorController extends Controller
         if ($request['status'] == 'rejected') {
             $order->order_status = $request['status'];
             $order['canceled'] = now();
+        } else if ($request['status'] == 'processing') {
+            if ($order->order_status == 'accepted_by_delivery_agent') {
+                $order->order_status = $request['status'];
+                $order[$request['status']] = now();
+            } else {
+                return response()->json([
+                    'state' => 1,
+                    'errors' => [
+                        ['code' => 'not_accepted_by_delivery_agent', 'message' => 'Cannot process order, delivery agent not accepted yet!']
+                    ]
+                ], 200);
+            }
         } else {
             $order->order_status = $request['status'];
             $order[$request['status']] = now();
