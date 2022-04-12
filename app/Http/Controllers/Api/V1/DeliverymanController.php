@@ -511,6 +511,22 @@ class DeliverymanController extends Controller
                 $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
                 $dm->save();
             }
+            
+            
+            
+            if ($request['status'] == 'picked_up') {
+                if ($order->order_status == 'handover') {
+                    $order->order_status = $request['status'];
+                    $order[$request['status']] = now();
+                } else {
+                    return response()->json([
+                        'state' => 1,
+                        'errors' => [
+                            ['code' => 'not_handover_by_vendor', 'message' => 'Cannot pick up order, vendor not handover yet!']
+                        ]
+                    ], 200);
+                }
+            }
 
 
             $order->order_status = $request['status'];
