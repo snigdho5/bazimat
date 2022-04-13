@@ -58,6 +58,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::get('all-orders', 'DeliverymanController@get_all_orders');
         Route::get('order-details', 'DeliverymanController@get_order_details');
         Route::post('record-location-data', 'DeliverymanController@record_location_data');
+        Route::get('order-delivery-history', 'DeliverymanController@get_order_history');
 
         Route::group(['prefix' => 'reviews', 'middleware' => ['auth:api']], function () {
             Route::get('/{delivery_man_id}', 'DeliveryManReviewController@get_reviews');
@@ -67,7 +68,6 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::group(['middleware' => ['dm.api']], function () {
             Route::get('notifications', 'DeliverymanController@get_notifications');
             Route::put('update-profile', 'DeliverymanController@update_profile');
-            Route::get('order-delivery-history', 'DeliverymanController@get_order_history');
             Route::put('update-payment-status', 'DeliverymanController@order_payment_status_update');
         });
     });

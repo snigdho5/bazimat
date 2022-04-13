@@ -418,12 +418,13 @@ class DeliverymanController extends Controller
             'order_id' => 'required'
         ]);
         if ($validator->fails()) {
-            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 403);
+            return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
-        $history = DeliveryHistory::where(['order_id' => $request['order_id'], 'delivery_man_id' => $dm['id']])->get();
-        return response()->json($history, 200);
+        $history = DeliveryHistory::where(['order_id' => $request['order_id']])->get();
+        // $history = DeliveryHistory::where(['order_id' => $request['order_id'], 'delivery_man_id' => $dm['id']])->get();
+        return response()->json(['state' => 0, 'message' => 'Location details', 'respData' => $history], 200);
     }
 
     public function update_order_status(Request $request)
@@ -511,9 +512,9 @@ class DeliverymanController extends Controller
                 $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
                 $dm->save();
             }
-            
-            
-            
+
+
+
             if ($request['status'] == 'picked_up') {
                 if ($order->order_status == 'handover') {
                     $order->order_status = $request['status'];
