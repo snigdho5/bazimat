@@ -420,11 +420,35 @@ class DeliverymanController extends Controller
         if ($validator->fails()) {
             return response()->json(['state' => 1, 'errors' => Helpers::error_processor($validator)], 200);
         }
-        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
         $history = DeliveryHistory::where(['order_id' => $request['order_id']])->get();
+        if ($history && isset($history[0]->delivery_man_id)) {
+            $dm = DeliveryMan::where(['id' => $history[0]->delivery_man_id])->first();
+            if (isset($dm->id)) {
+                $dm->image = url('storage/app/public/delivery-man/' . $dm->image);
+            } else {
+                $dm = [];
+            }
+        } else {
+            $dm = [];
+        }
+
+        $cartDetails = DB::table('cart')
+            ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
+            ->join('food', 'food.id', '=', 'cart.food_id')
+            ->where('cart.order_id', $request['order_id'])
+            ->where('cart.is_odered', 1)
+            ->get();
         // $history = DeliveryHistory::where(['order_id' => $request['order_id'], 'delivery_man_id' => $dm['id']])->get();
-        return response()->json(['state' => 0, 'message' => 'Location details', 'respData' => $history], 200);
+        return response()->json([
+            'state' => 0,
+            'message' => 'Location details',
+            'respData' => [
+                'location_data' => $history,
+                'cart_details' => $cartDetails,
+                'delivery_agent' => $dm
+            ]
+        ], 200);
     }
 
     public function update_order_status(Request $request)

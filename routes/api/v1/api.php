@@ -58,7 +58,7 @@ Route::group(['namespace' => 'Api\V1'], function () {
         Route::get('all-orders', 'DeliverymanController@get_all_orders');
         Route::get('order-details', 'DeliverymanController@get_order_details');
         Route::post('record-location-data', 'DeliverymanController@record_location_data');
-        Route::get('order-delivery-history', 'DeliverymanController@get_order_history');
+        Route::get('order-delivery-history', 'DeliverymanController@get_order_history');//vendor app
 
         Route::group(['prefix' => 'reviews', 'middleware' => ['auth:api']], function () {
             Route::get('/{delivery_man_id}', 'DeliveryManReviewController@get_reviews');

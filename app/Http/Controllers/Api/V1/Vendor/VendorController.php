@@ -486,7 +486,7 @@ class VendorController extends Controller
 
         $order = Order::whereHas('restaurant.vendor', function ($query) use ($vendor) {
             $query->where('id', $vendor->id);
-        })
+        })                 
             ->with(['customer', 'details'])
             ->where('id', $request['order_id'])
             ->Notpos()
