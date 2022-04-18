@@ -141,7 +141,7 @@ class VendorController extends Controller
 
         $orders = Order::where('restaurant_id', $request['restaurant_id'])
             // ->where('order_status', 'pending')
-            ->whereIn('order_status', ['pending', 'accepted', 'confirmed', 'rejected', 'processing'])
+            ->whereIn('order_status', ['pending', 'accepted', 'accepted_by_delivery_agent', 'confirmed', 'rejected', 'processing'])
             ->whereDate('created_at', date('Y-m-d'))
             ->Notpos()
             ->orderBy('schedule_at', 'desc')
