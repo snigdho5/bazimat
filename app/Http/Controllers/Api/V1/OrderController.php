@@ -43,7 +43,8 @@ class OrderController extends Controller
 
             $delivery_man = ($order['delivery_man'] != '') ? Helpers::deliverymen_data_formatting([$order['delivery_man']]) : "";
             unset($order['delivery_man']);
-            $order['delivery_man'] = $delivery_man;
+            $order['delivery_man'] = (isset($delivery_man) && $delivery_man != '') ? $delivery_man : [];
+
             $order_amount2 = number_format((float)$order['order_amount'], 2, '.', '');
             unset($order['order_amount']);
             $order['order_amount_round'] = $order_amount2;
@@ -267,7 +268,7 @@ class OrderController extends Controller
         $order->customer->cm_firebase_token = (!empty($user)) ? $user->cm_firebase_token : '';
         $order->order_amount = number_format((float)$request['order_amount'], 2, '.', '');
 
-        
+
         $getRestaurant = Restaurant::where('id', $request['restaurant_id'])->first();
         $order->customer->vendor_firebase_token = (!empty($getRestaurant)) ? $getRestaurant->firebase_token : '';
 
@@ -569,7 +570,7 @@ class OrderController extends Controller
 
                 return $data;
             });
-            
+
 
         if (!empty($orders) && isset($orders[0]->id)) {
             return response()->json(['state' => 0, 'message' => 'Found!', 'errors' => $orders], 200);
