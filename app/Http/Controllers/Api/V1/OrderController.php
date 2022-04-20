@@ -511,12 +511,12 @@ class OrderController extends Controller
                 $restaurant = $data['restaurant'] ? Helpers::restaurant_data_formatting($data['restaurant']) : $data['restaurant'];
 
                 $restaurant->avg_rating = number_format((float)$restaurant->avg_rating, 2, '.', '');
-
+                $restaurant->firebase_token = ($restaurant->firebase_token != '' && $restaurant->firebase_token != 'null') ? $restaurant->firebase_token : '';
                 $data['restaurant'] = $restaurant;
 
                 $delivery_man = ($data['delivery_man'] != '') ? Helpers::deliverymen_data_formatting([$data['delivery_man']]) : "";
                 unset($data['delivery_man']);
-                
+
                 $data['delivery_man'] = (isset($delivery_man) && $delivery_man != '') ? $delivery_man : [];
                 $order_amount2 = number_format((float)$data['order_amount'], 2, '.', '');
                 unset($data['order_amount']);
