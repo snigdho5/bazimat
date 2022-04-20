@@ -516,7 +516,8 @@ class OrderController extends Controller
 
                 $delivery_man = ($data['delivery_man'] != '') ? Helpers::deliverymen_data_formatting([$data['delivery_man']]) : "";
                 unset($data['delivery_man']);
-                $data['delivery_man'] = $delivery_man;
+                
+                $data['delivery_man'] = (isset($delivery_man) && $delivery_man != '') ? $delivery_man : [];
                 $order_amount2 = number_format((float)$data['order_amount'], 2, '.', '');
                 unset($data['order_amount']);
                 $data['order_amount_round'] = $order_amount2;
