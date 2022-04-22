@@ -212,7 +212,8 @@ class Helpers
 
                 $ratings = RestaurantLogic::calculate_restaurant_rating($item['rating']);
                 unset($item['rating']);
-                $item['avg_rating'] = $ratings['rating'];
+                $avg_rating = $ratings['rating'];
+                $item['avg_rating'] = number_format((float)$avg_rating, 2, '.', '');
                 $item['rating_count '] = $ratings['total'];
                 unset($item['campaigns']);
                 unset($item['pivot']);
@@ -230,7 +231,8 @@ class Helpers
             }
             $ratings = RestaurantLogic::calculate_restaurant_rating($data['rating']);
             unset($data['rating']);
-            $data['avg_rating'] = $ratings['rating'];
+            $avg_rating = $ratings['rating'];
+            $data['avg_rating'] = number_format((float)$avg_rating, 2, '.', '');
             $data['rating_count '] = $ratings['total'];
             unset($data['campaigns']);
             unset($data['pivot']);
@@ -254,11 +256,11 @@ class Helpers
                 }
             }
         } else {
-            if ($item->food) {
-                $foods[] = self::product_data_formatting($item->food);
+            if ($data->food) {
+                $foods[] = self::product_data_formatting($data->food);
             }
-            if ($item->restaurant) {
-                $restaurants[] = self::restaurant_data_formatting($item->restaurant);
+            if ($data->restaurant) {
+                $restaurants[] = self::restaurant_data_formatting($data->restaurant);
             }
         }
 

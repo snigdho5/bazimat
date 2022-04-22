@@ -87,8 +87,10 @@ class WishlistController extends Controller
             return $q->where('zone_id', $zone_id);
         }])->get();
         $wishlists = Helpers::wishlist_data_formatting($wishlists, true);
+
+    
         return response()->json([
-                 'state'=>0,
+                'state'=>0,
                 'errors' => $wishlists,
                 'coverimgpath'=>url('')."/storage/app/public/restaurant/cover/",
                 'logoimgpath' =>url('')."/storage/app/public/restaurant/",
