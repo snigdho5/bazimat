@@ -385,6 +385,8 @@ class DeliverymanController extends Controller
             'user_id' => 'required',
             'longitude' => 'required',
             'latitude' => 'required',
+            'heading' => 'required',
+            'heading_accuracy' => 'required',
             // 'location' => 'required',
         ]);
         if ($validator->fails()) {
@@ -404,6 +406,8 @@ class DeliverymanController extends Controller
             'delivery_man_id' => $dm['id'],
             'longitude' => $request['longitude'],
             'latitude' => $request['latitude'],
+            'heading' => $request['heading'],
+            'heading_accuracy' => $request['heading_accuracy'],
             'time' => now(),
             'location' => $request['location'],
             'created_at' => now(),
@@ -535,6 +539,8 @@ class DeliverymanController extends Controller
 
                 $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
                 $dm->save();
+
+                //remove delivery history
             }
 
 
