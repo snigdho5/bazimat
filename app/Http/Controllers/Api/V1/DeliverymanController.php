@@ -394,6 +394,9 @@ class DeliverymanController extends Controller
         }
 
         $dm = DeliveryMan::where(['id' => $request['user_id']])->first();
+        if (!$dm) {
+            return response()->json(['state' => 1, 'message' => 'Delivery agent not found!'], 200);
+        }
         $order = Order::whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up'])
             ->when($request['order_id'], function ($q) use ($request) {
                 return $q->where('id', $request['order_id']);
@@ -401,8 +404,11 @@ class DeliverymanController extends Controller
             ->where('delivery_man_id', $dm['id'])
             ->Notpos()
             ->first();
+        if (!$order) {
+            return response()->json(['state' => 1, 'message' => 'Order already delivered or Delivery agent mismatch!'], 200);
+        }
         DB::table('delivery_histories')->insert([
-            'order_id' => $order ? $order->id : null,
+            'order_id' => $order->id,
             'delivery_man_id' => $dm['id'],
             'longitude' => $request['longitude'],
             'latitude' => $request['latitude'],
