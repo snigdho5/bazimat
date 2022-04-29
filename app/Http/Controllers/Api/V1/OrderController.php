@@ -505,7 +505,7 @@ class OrderController extends Controller
         $orders = Order::with(['restaurant', 'delivery_man.rating'])
             ->withCount('details')
             ->where(['user_id' => $user_id])
-            ->whereRaw("(order_status = 'success' OR order_status = 'canceled')")
+            ->whereRaw("(order_status = 'delivered' OR order_status = 'canceled')")
             ->Notpos()->get()->map(function ($data) {
                 $data['delivery_address'] = $data['delivery_address'] ? json_decode($data['delivery_address']) : $data['delivery_address'];
                 $restaurant = $data['restaurant'] ? Helpers::restaurant_data_formatting($data['restaurant']) : $data['restaurant'];

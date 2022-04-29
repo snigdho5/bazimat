@@ -443,6 +443,18 @@ class DeliverymanController extends Controller
             $dm = [];
         }
 
+        $order = Order::where(['id' => $request['order_id']])->Notpos()->first();
+
+        if ($order) {
+            if ($order->status == "delivered") {
+                $is_delivered = 'yes';
+            }else{
+                $is_delivered = 'no';
+            }
+        }else{
+            $is_delivered = 'order_not_found';
+        }
+
         $cartDetails = DB::table('cart')
             ->select('cart.*', 'food.name AS food_name', 'food.image AS food_image')
             ->join('food', 'food.id', '=', 'cart.food_id')
@@ -456,7 +468,8 @@ class DeliverymanController extends Controller
             'respData' => [
                 'location_data' => $history,
                 'cart_details' => $cartDetails,
-                'delivery_agent' => $dm
+                'delivery_agent' => $dm,
+                'is_delivered' => $is_delivered
             ]
         ], 200);
     }
