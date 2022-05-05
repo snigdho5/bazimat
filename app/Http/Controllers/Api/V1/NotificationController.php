@@ -72,7 +72,7 @@ class NotificationController extends Controller
             // print_r($usr_notifications);die;
             return response()->json(['state' => 0,'message' => 'Found!', 'respData' => $usr_notifications], 200);
         } catch (\Exception $e) {
-            return response()->json(['state' => 1,'message' => 'Not found!', 'respData' => []], 200);
+            return response()->json(['state' => 0,'message' => 'Not found!', 'respData' => []], 200);
         }
     }
 

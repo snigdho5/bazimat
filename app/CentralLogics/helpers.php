@@ -808,9 +808,9 @@ class Helpers
 
                 $pushResp = json_decode($pushResp);
                 $pushResp2 = json_decode($pushResp2);
-                if ($pushResp->success && $pushResp2->success) {
+                if ($pushResp->success) {
                     DB::table('user_notifications')->insert([
-                        'data' => json_encode($datavendor),
+                        'data' => json_encode($datacust),
                         'user_id' => $order->user_id,
                         'created_at' => now(),
                         'updated_at' => now()
